@@ -10,6 +10,10 @@ from app.core.config import settings
 from app.core.database import AsyncSessionFactory, create_db_and_tables
 from app.core.security import hash_password
 from app.models.user import User
+from app.services.mcp_process_manager import McpProcessManager
+
+# Module-level singleton for MCP process management
+mcp_process_manager = McpProcessManager()
 
 
 async def seed_admin_user() -> None:
@@ -29,7 +33,9 @@ async def seed_admin_user() -> None:
 async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     await create_db_and_tables()
     await seed_admin_user()
+    await mcp_process_manager.cleanup_orphans()
     yield
+    await mcp_process_manager.stop_all()
 
 
 def create_app() -> FastAPI:

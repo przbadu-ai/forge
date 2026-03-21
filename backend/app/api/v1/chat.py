@@ -20,8 +20,10 @@ from app.models.llm_provider import LLMProvider
 from app.models.message import Message
 from app.models.settings import AppSettings
 from app.models.user import User
+from app.models.mcp_server import McpServer
 from app.services.executors import ExecutorRegistry, ToolExecutor
 from app.services.executors.builtin_tools import BUILTIN_TOOLS
+from app.services.executors.mcp_executor import discover_and_register_mcp_tools
 from app.services.orchestrator import Orchestrator
 from app.services.run_state import RunStateStore
 from app.services.trace_emitter import TraceEmitter
@@ -261,6 +263,18 @@ async def _token_generator(
         tool_executor = ToolExecutor()
         for tool_name in BUILTIN_TOOLS:
             registry.register(tool_name, tool_executor)
+
+        # Discover and register MCP tools from enabled servers
+        from app.main import mcp_process_manager
+
+        mcp_result = await session.execute(select(McpServer))
+        mcp_servers = list(mcp_result.scalars().all())
+        await discover_and_register_mcp_tools(
+            servers=mcp_servers,
+            registry=registry,
+            process_manager=mcp_process_manager,
+            tracer=tracer,
+        )
 
         orchestrator = Orchestrator(
             registry=registry,
