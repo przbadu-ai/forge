@@ -18,7 +18,7 @@ Requirements for initial release. Each maps to roadmap phases.
 
 - [x] **CHAT-01**: User can start a new chat conversation
 - [x] **CHAT-02**: User receives streaming token output via SSE
-- [ ] **CHAT-03**: Assistant messages render markdown with syntax-highlighted code blocks
+- [x] **CHAT-03**: Assistant messages render markdown with syntax-highlighted code blocks
 - [x] **CHAT-04**: User can view conversation list in sidebar
 - [x] **CHAT-05**: User can resume a previous conversation
 - [x] **CHAT-06**: User can rename a conversation
@@ -142,7 +142,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 | UX-01 | Phase 3: LLM Provider Settings | Pending |
 | CHAT-01 | Phase 4: Core Streaming Chat | Complete |
 | CHAT-02 | Phase 4: Core Streaming Chat | Complete |
-| CHAT-03 | Phase 4: Core Streaming Chat | Pending |
+| CHAT-03 | Phase 4: Core Streaming Chat | Complete |
 | CHAT-04 | Phase 4: Core Streaming Chat | Complete |
 | CHAT-05 | Phase 4: Core Streaming Chat | Complete |
 | CHAT-06 | Phase 4: Core Streaming Chat | Complete |

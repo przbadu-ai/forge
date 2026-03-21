@@ -88,12 +88,12 @@ Plans:
   4. User can click a previous conversation in the sidebar and continue it; messages load correctly
   5. User can rename a conversation inline and the new name persists
   6. User can delete a conversation and it is removed from the sidebar
-**Plans:** 1/1 plans complete
+**Plans:** 2/1 plans complete
 
 Plans:
 - [x] 04-01-PLAN.md — Backend chat models + CRUD + SSE streaming (Wave 1)
 - [ ] 04-02-PLAN.md — Frontend chat layout + streaming consumer + markdown rendering (Wave 2)
-- [ ] 04-03-PLAN.md — Chat tests: backend pytest + frontend Vitest + Playwright E2E (Wave 3)
+- [x] 04-03-PLAN.md — Chat tests: backend pytest + frontend Vitest + Playwright E2E (Wave 3)
 
 ### Phase 5: Chat Completions
 **Goal**: Users have full control over chat behavior including system prompts, generation control, and data export
@@ -238,7 +238,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 →
 | 1. Infrastructure Foundation | 4/1 | Complete   | 2026-03-21 |
 | 2. Authentication | 3/1 | Complete   | 2026-03-21 |
 | 3. LLM Provider Settings | 1/1 | Complete   | 2026-03-21 |
-| 4. Core Streaming Chat | 1/1 | Complete   | 2026-03-21 |
+| 4. Core Streaming Chat | 2/1 | Complete   | 2026-03-21 |
 | 5. Chat Completions | 0/4 | Not started | - |
 | 6. Execution Trace System | 0/5 | Not started | - |
 | 7. Orchestration Loop | 0/5 | Not started | - |
