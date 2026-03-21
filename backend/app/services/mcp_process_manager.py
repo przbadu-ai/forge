@@ -47,7 +47,7 @@ class McpProcessManager:
             proc.terminate()  # SIGTERM
             try:
                 await asyncio.wait_for(proc.wait(), timeout=5.0)
-            except asyncio.TimeoutError:
+            except TimeoutError:
                 proc.kill()  # SIGKILL
                 await proc.wait()
         except ProcessLookupError:

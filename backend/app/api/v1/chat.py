@@ -17,10 +17,10 @@ from app.core.database import get_session
 from app.core.encryption import decrypt_value
 from app.models.conversation import Conversation
 from app.models.llm_provider import LLMProvider
+from app.models.mcp_server import McpServer
 from app.models.message import Message
 from app.models.settings import AppSettings
 from app.models.user import User
-from app.models.mcp_server import McpServer
 from app.services.executors import ExecutorRegistry, ToolExecutor
 from app.services.executors.builtin_tools import BUILTIN_TOOLS
 from app.services.executors.mcp_executor import discover_and_register_mcp_tools

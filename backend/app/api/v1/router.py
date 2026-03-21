@@ -14,9 +14,7 @@ api_router.include_router(auth_router, prefix="/auth", tags=["auth"])
 api_router.include_router(chat_router, prefix="/chat", tags=["chat"])
 api_router.include_router(providers_router, prefix="/settings/providers", tags=["settings"])
 api_router.include_router(general_settings_router, prefix="/settings/general", tags=["settings"])
-api_router.include_router(
-    mcp_servers_router, prefix="/settings/mcp-servers", tags=["mcp-servers"]
-)
+api_router.include_router(mcp_servers_router, prefix="/settings/mcp-servers", tags=["mcp-servers"])
 
 
 @api_router.get("/health")

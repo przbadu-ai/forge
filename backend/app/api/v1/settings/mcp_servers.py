@@ -2,7 +2,6 @@
 
 import json
 from datetime import UTC, datetime
-from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel
@@ -13,7 +12,6 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.api.v1.deps import get_current_user
 from app.core.database import get_session
 from app.models.mcp_server import McpServer
-from app.models.user import User
 
 router = APIRouter(dependencies=[Depends(get_current_user)])
 
@@ -53,7 +51,7 @@ class McpServerRead(BaseModel):
 
 def _to_read(server: McpServer) -> McpServerRead:
     return McpServerRead(
-        id=server.id,  # type: ignore[arg-type]
+        id=server.id,
         name=server.name,
         command=server.command,
         args=json.loads(server.args),
@@ -101,12 +99,12 @@ async def create_mcp_server(
     session.add(server)
     try:
         await session.commit()
-    except IntegrityError:
+    except IntegrityError as exc:
         await session.rollback()
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
             detail=f"MCP server with name '{data.name}' already exists",
-        )
+        ) from exc
     await session.refresh(server)
     return _to_read(server)
 

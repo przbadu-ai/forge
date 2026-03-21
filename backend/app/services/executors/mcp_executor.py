@@ -51,13 +51,15 @@ class McpExecutor:
                 args=args_list,
                 env=env_vars if env_vars else None,
             )
-            async with stdio_client(params) as (read, write):
-                async with ClientSession(read, write) as session:
-                    await asyncio.wait_for(session.initialize(), timeout=self.timeout)
-                    result = await asyncio.wait_for(
-                        session.call_tool(tool_name, arguments=input),
-                        timeout=self.timeout,
-                    )
+            async with (
+                stdio_client(params) as (read, write),
+                ClientSession(read, write) as session,
+            ):
+                await asyncio.wait_for(session.initialize(), timeout=self.timeout)
+                result = await asyncio.wait_for(
+                    session.call_tool(tool_name, arguments=input),
+                    timeout=self.timeout,
+                )
 
             # Extract text content from result
             output: Any = None
@@ -68,7 +70,7 @@ class McpExecutor:
             self.tracer.emit_tool_end(name, output)
             return ExecutorResult(output=output)
 
-        except asyncio.TimeoutError:
+        except TimeoutError:
             error_msg = f"MCP tool '{name}' timed out after {self.timeout}s"
             self.tracer.emit_tool_end(name, None, error=error_msg)
             return ExecutorResult(output=None, error=error_msg)
@@ -106,12 +108,12 @@ async def discover_and_register_mcp_tools(
                 args=args_list,
                 env=env_vars if env_vars else None,
             )
-            async with stdio_client(params) as (read, write):
-                async with ClientSession(read, write) as session:
-                    await asyncio.wait_for(session.initialize(), timeout=timeout)
-                    tools_result = await asyncio.wait_for(
-                        session.list_tools(), timeout=timeout
-                    )
+            async with (
+                stdio_client(params) as (read, write),
+                ClientSession(read, write) as session,
+            ):
+                await asyncio.wait_for(session.initialize(), timeout=timeout)
+                tools_result = await asyncio.wait_for(session.list_tools(), timeout=timeout)
 
             executor = McpExecutor(
                 server=server,
@@ -130,9 +132,11 @@ async def discover_and_register_mcp_tools(
                     "function": {
                         "name": namespaced,
                         "description": tool.description or f"MCP tool: {tool.name}",
-                        "parameters": tool.inputSchema
-                        if hasattr(tool, "inputSchema") and tool.inputSchema
-                        else {"type": "object", "properties": {}},
+                        "parameters": (
+                            tool.inputSchema
+                            if hasattr(tool, "inputSchema") and tool.inputSchema
+                            else {"type": "object", "properties": {}}
+                        ),
                     },
                 }
                 tool_schemas.append(schema)
