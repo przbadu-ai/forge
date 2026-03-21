@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useAuth } from "@/context/auth-context";
-import { getMessages } from "@/lib/chat-api";
+import { getMessages, regenerateLastMessage } from "@/lib/chat-api";
 import type { Message, SSEEvent } from "@/types/chat";
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
@@ -18,6 +18,8 @@ interface UseChatReturn {
   isStreaming: boolean;
   error: string | null;
   sendMessage: (content: string) => Promise<void>;
+  stopGeneration: () => void;
+  regenerate: () => Promise<void>;
 }
 
 export function useChat({
@@ -144,6 +146,18 @@ export function useChat({
                 if (messageCountRef.current === 1) {
                   onConversationUpdated?.();
                 }
+              } else if (event.type === "stopped") {
+                // Partial content saved on backend — persist locally
+                const partialMsg: Message = {
+                  id: event.message_id,
+                  conversation_id: conversationId,
+                  role: "assistant",
+                  content: accumulated,
+                  created_at: new Date().toISOString(),
+                };
+                setMessages((prev) => [...prev, partialMsg]);
+                setStreamingContent(null);
+                setIsStreaming(false);
               } else if (event.type === "error") {
                 setError(event.message);
                 setStreamingContent(null);
@@ -155,7 +169,12 @@ export function useChat({
           }
         }
       } catch (err) {
-        if ((err as Error).name !== "AbortError") {
+        if ((err as Error).name === "AbortError") {
+          // User stopped generation — streaming content is preserved
+          // until "stopped" SSE event arrives (or not)
+          setStreamingContent(null);
+          setIsStreaming(false);
+        } else {
           setError((err as Error).message || "Stream failed");
           setStreamingContent(null);
           setIsStreaming(false);
@@ -166,6 +185,37 @@ export function useChat({
     },
     [conversationId, token, isStreaming, onConversationUpdated],
   );
+
+  const stopGeneration = useCallback(() => {
+    abortControllerRef.current?.abort();
+  }, []);
+
+  const regenerate = useCallback(async () => {
+    if (!conversationId || !token || isStreaming) return;
+
+    // Find the last user message content before regenerating
+    const lastUserMsg = [...messages].reverse().find((m) => m.role === "user");
+    if (!lastUserMsg) return;
+
+    try {
+      await regenerateLastMessage(token, conversationId);
+      // Remove last assistant message from local state
+      setMessages((prev) => {
+        const copy = [...prev];
+        for (let i = copy.length - 1; i >= 0; i--) {
+          if (copy[i].role === "assistant") {
+            copy.splice(i, 1);
+            break;
+          }
+        }
+        return copy;
+      });
+      // Re-stream with the last user message
+      await sendMessage(lastUserMsg.content);
+    } catch {
+      setError("Failed to regenerate message");
+    }
+  }, [conversationId, token, isStreaming, messages, sendMessage]);
 
   // Cleanup abort controller on unmount
   useEffect(() => {
@@ -180,5 +230,7 @@ export function useChat({
     isStreaming,
     error,
     sendMessage,
+    stopGeneration,
+    regenerate,
   };
 }

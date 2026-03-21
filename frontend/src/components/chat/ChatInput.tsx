@@ -2,14 +2,16 @@
 
 import { useCallback, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
-import { SendHorizontal } from "lucide-react";
+import { SendHorizontal, Square } from "lucide-react";
 
 interface ChatInputProps {
   onSend: (content: string) => void;
+  onStop?: () => void;
+  isStreaming?: boolean;
   disabled?: boolean;
 }
 
-export function ChatInput({ onSend, disabled }: ChatInputProps) {
+export function ChatInput({ onSend, onStop, isStreaming, disabled }: ChatInputProps) {
   const [value, setValue] = useState("");
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
@@ -22,7 +24,7 @@ export function ChatInput({ onSend, disabled }: ChatInputProps) {
 
   const handleSend = useCallback(() => {
     const trimmed = value.trim();
-    if (!trimmed || disabled) return;
+    if (!trimmed || disabled || isStreaming) return;
     onSend(trimmed);
     setValue("");
     // Reset height after clearing
@@ -31,7 +33,7 @@ export function ChatInput({ onSend, disabled }: ChatInputProps) {
         textareaRef.current.style.height = "auto";
       }
     });
-  }, [value, disabled, onSend]);
+  }, [value, disabled, isStreaming, onSend]);
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === "Enter" && !e.shiftKey) {
@@ -51,18 +53,29 @@ export function ChatInput({ onSend, disabled }: ChatInputProps) {
         }}
         onKeyDown={handleKeyDown}
         placeholder="Type a message..."
-        disabled={disabled}
+        disabled={disabled || isStreaming}
         rows={1}
         className="flex-1 resize-none rounded-xl border bg-background px-4 py-3 text-sm outline-none placeholder:text-muted-foreground focus:ring-2 focus:ring-ring disabled:opacity-50"
       />
-      <Button
-        onClick={handleSend}
-        disabled={disabled || !value.trim()}
-        size="icon"
-        aria-label="Send message"
-      >
-        <SendHorizontal className="h-4 w-4" />
-      </Button>
+      {isStreaming ? (
+        <Button
+          onClick={onStop}
+          variant="destructive"
+          size="icon"
+          aria-label="Stop generation"
+        >
+          <Square className="h-4 w-4" />
+        </Button>
+      ) : (
+        <Button
+          onClick={handleSend}
+          disabled={disabled || !value.trim()}
+          size="icon"
+          aria-label="Send message"
+        >
+          <SendHorizontal className="h-4 w-4" />
+        </Button>
+      )}
     </div>
   );
 }

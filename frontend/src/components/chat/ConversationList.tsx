@@ -1,11 +1,15 @@
 "use client";
 
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
+import { useAuth } from "@/context/auth-context";
 import { useConversations } from "@/hooks/useConversations";
+import { searchConversations } from "@/lib/chat-api";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
-import { Plus, Trash2, MessageSquare } from "lucide-react";
+import { Plus, Trash2, MessageSquare, Search } from "lucide-react";
+import type { Conversation } from "@/types/chat";
 
 interface ConversationListProps {
   activeId?: number;
@@ -13,6 +17,7 @@ interface ConversationListProps {
 
 export function ConversationList({ activeId }: ConversationListProps) {
   const router = useRouter();
+  const { token } = useAuth();
   const {
     conversations,
     isLoading,
@@ -23,7 +28,35 @@ export function ConversationList({ activeId }: ConversationListProps) {
 
   const [editingId, setEditingId] = useState<number | null>(null);
   const [editValue, setEditValue] = useState("");
+  const [searchQuery, setSearchQuery] = useState("");
+  const [searchResults, setSearchResults] = useState<Conversation[] | null>(null);
+  const [isSearching, setIsSearching] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
+
+  // Debounced search
+  useEffect(() => {
+    if (searchQuery.length < 2) {
+      setSearchResults(null);
+      return;
+    }
+
+    const timer = setTimeout(async () => {
+      if (!token) return;
+      setIsSearching(true);
+      try {
+        const results = await searchConversations(token, searchQuery);
+        setSearchResults(results);
+      } catch {
+        setSearchResults(null);
+      } finally {
+        setIsSearching(false);
+      }
+    }, 300);
+
+    return () => clearTimeout(timer);
+  }, [searchQuery, token]);
+
+  const displayConversations = searchResults ?? conversations;
 
   const handleNew = useCallback(async () => {
     const conv = await createConversation();
@@ -83,18 +116,34 @@ export function ConversationList({ activeId }: ConversationListProps) {
         </Button>
       </div>
 
+      {/* Search input */}
+      <div className="px-3 pb-2">
+        <div className="relative">
+          <Search className="absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
+          <Input
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder="Search conversations..."
+            className="pl-8"
+            aria-label="Search conversations"
+          />
+        </div>
+      </div>
+
       <div className="flex-1 overflow-y-auto px-2">
-        {isLoading ? (
+        {isLoading || isSearching ? (
           <div className="px-3 py-2 text-sm text-muted-foreground">
             Loading...
           </div>
-        ) : conversations.length === 0 ? (
+        ) : displayConversations.length === 0 ? (
           <div className="px-3 py-2 text-sm text-muted-foreground">
-            No conversations yet
+            {searchQuery.length >= 2
+              ? "No conversations found"
+              : "No conversations yet"}
           </div>
         ) : (
           <div className="space-y-0.5">
-            {conversations.map((conv) => (
+            {displayConversations.map((conv) => (
               <div
                 key={conv.id}
                 className={cn(
