@@ -47,7 +47,7 @@ async def seed_default_skills() -> None:
     async with AsyncSessionFactory() as session:
         for skill_data in DEFAULT_SKILLS:
             result = await session.execute(
-                select(Skill).where(Skill.name == skill_data["name"])  # type: ignore[arg-type]
+                select(Skill).where(Skill.name == skill_data["name"])
             )
             if result.scalars().first() is None:
                 skill = Skill(**skill_data)
