@@ -75,7 +75,7 @@ Plans:
 Plans:
 - [x] 03-01: Settings backend (LLM provider CRUD endpoints, test-connection endpoint, encrypted API key storage with SecretStr)
 - [ ] 03-02: Settings frontend (Settings page shell, LLM Providers section, test-connection button, theme switcher with next-themes)
-- [ ] 03-03: Settings tests (provider CRUD, test-connection, theme persistence)
+- [x] 03-03: Settings tests (provider CRUD, test-connection, theme persistence)
 
 ### Phase 4: Core Streaming Chat
 **Goal**: Users can have a complete streaming conversation with an LLM and manage their conversation history
