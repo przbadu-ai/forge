@@ -42,7 +42,7 @@ Plans:
 - [x] 01-01: Backend project scaffold (FastAPI app factory, uv environment, pyproject.toml, ruff/black/mypy config)
 - [x] 01-02: Database layer (SQLite engine with WAL+busy_timeout, SQLModel base models, Alembic with batch mode)
 - [x] 01-03: Frontend project scaffold (Next.js 16 App Router, TypeScript strict, shadcn/ui, Tailwind, ESLint, Prettier, Vitest)
-- [ ] 01-04: Dev tooling (Makefile/scripts for dev/test/lint, CI skeleton, directory structure)
+- [x] 01-04: Dev tooling (Makefile/scripts for dev/test/lint, CI skeleton, directory structure)
 
 ### Phase 2: Authentication
 **Goal**: Users can securely access Forge and all API routes are protected
@@ -237,7 +237,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 →
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Infrastructure Foundation | 1/1 | Complete   | 2026-03-21 |
+| 1. Infrastructure Foundation | 4/1 | Complete   | 2026-03-21 |
 | 2. Authentication | 0/3 | Not started | - |
 | 3. LLM Provider Settings | 0/3 | Not started | - |
 | 4. Core Streaming Chat | 0/5 | Not started | - |
