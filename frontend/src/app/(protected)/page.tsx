@@ -1,8 +1,10 @@
 "use client";
 
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/context/auth-context";
 import { Button } from "@/components/ui/button";
+import { Settings } from "lucide-react";
 
 export default function HomePage() {
   const { user, logout } = useAuth();
@@ -21,9 +23,18 @@ export default function HomePage() {
           Signed in as {user.username}
         </p>
       )}
-      <Button variant="outline" onClick={handleLogout}>
-        Sign out
-      </Button>
+      <div className="flex gap-2">
+        <Button
+          variant="outline"
+          render={<Link href="/settings" />}
+        >
+          <Settings data-icon="inline-start" />
+          Settings
+        </Button>
+        <Button variant="outline" onClick={handleLogout}>
+          Sign out
+        </Button>
+      </div>
     </main>
   );
 }
