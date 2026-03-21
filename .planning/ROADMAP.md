@@ -40,8 +40,8 @@ Decimal phases appear between their surrounding integers in numeric order.
 
 Plans:
 - [x] 01-01: Backend project scaffold (FastAPI app factory, uv environment, pyproject.toml, ruff/black/mypy config)
-- [ ] 01-02: Database layer (SQLite engine with WAL+busy_timeout, SQLModel base models, Alembic with batch mode)
-- [ ] 01-03: Frontend project scaffold (Next.js 16 App Router, TypeScript strict, shadcn/ui, Tailwind, ESLint, Prettier, Vitest)
+- [x] 01-02: Database layer (SQLite engine with WAL+busy_timeout, SQLModel base models, Alembic with batch mode)
+- [x] 01-03: Frontend project scaffold (Next.js 16 App Router, TypeScript strict, shadcn/ui, Tailwind, ESLint, Prettier, Vitest)
 - [ ] 01-04: Dev tooling (Makefile/scripts for dev/test/lint, CI skeleton, directory structure)
 
 ### Phase 2: Authentication
