@@ -14,7 +14,7 @@ export interface UserResponse {
 
 export async function loginApi(
   username: string,
-  password: string,
+  password: string
 ): Promise<TokenResponse> {
   const res = await fetch(`${API_BASE}/api/v1/auth/login`, {
     method: "POST",

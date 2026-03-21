@@ -69,7 +69,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setState({ token: data.access_token, user, isLoading: false });
       scheduleRefresh();
     },
-    [scheduleRefresh],
+    [scheduleRefresh]
   );
 
   const logout = useCallback(async () => {
