@@ -1,4 +1,5 @@
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
+from typing import Any
 
 from jose import JWTError, jwt
 from pwdlib import PasswordHash
@@ -17,23 +18,24 @@ def verify_password(plain: str, hashed: str) -> bool:
     return password_hash.verify(plain, hashed)
 
 
-def create_access_token(data: dict) -> str:  # type: ignore[type-arg]
+def create_access_token(data: dict[str, Any]) -> str:
     payload = data.copy()
-    expire = datetime.now(timezone.utc) + timedelta(minutes=settings.access_token_expire_minutes)
+    expire = datetime.now(UTC) + timedelta(minutes=settings.access_token_expire_minutes)
     payload.update({"exp": expire, "type": "access"})
-    return jwt.encode(payload, settings.secret_key, algorithm=settings.algorithm)
+    return str(jwt.encode(payload, settings.secret_key, algorithm=settings.algorithm))
 
 
-def create_refresh_token(data: dict) -> str:  # type: ignore[type-arg]
+def create_refresh_token(data: dict[str, Any]) -> str:
     payload = data.copy()
-    expire = datetime.now(timezone.utc) + timedelta(days=settings.refresh_token_expire_days)
+    expire = datetime.now(UTC) + timedelta(days=settings.refresh_token_expire_days)
     payload.update({"exp": expire, "type": "refresh"})
-    return jwt.encode(payload, settings.secret_key, algorithm=settings.algorithm)
+    return str(jwt.encode(payload, settings.secret_key, algorithm=settings.algorithm))
 
 
-def decode_token(token: str) -> dict:  # type: ignore[type-arg]
+def decode_token(token: str) -> dict[str, Any]:
     # Raises JWTError if invalid or expired
-    return jwt.decode(token, settings.secret_key, algorithms=[settings.algorithm])
+    result: dict[str, Any] = jwt.decode(token, settings.secret_key, algorithms=[settings.algorithm])
+    return result
 
 
 __all__ = [
