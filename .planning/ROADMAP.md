@@ -129,7 +129,7 @@ Plans:
 
 Plans:
 - [x] 06-01-PLAN.md — Backend: TraceEmitter service, Message.trace_data field, Alembic migration, SSE trace events (Wave 1)
-- [ ] 06-02-PLAN.md — Frontend: TraceEvent types, useChat trace accumulation, TracePanel component, MessageBubble integration, trace replay (Wave 2)
+- [x] 06-02-PLAN.md — Frontend: TraceEvent types, useChat trace accumulation, TracePanel component, MessageBubble integration, trace replay (Wave 2)
 - [ ] 06-03-PLAN.md — Tests: TraceEmitter unit, SSE integration, persistence, TracePanel component tests (Wave 3)
 
 ### Phase 7: Orchestration Loop

@@ -35,7 +35,7 @@ Requirements for initial release. Each maps to roadmap phases.
 - [x] **TRACE-02**: Trace shows ordered events: tool calls, MCP calls, skill triggers
 - [x] **TRACE-03**: Each trace event shows type, name, status, timestamps, and compact input/output
 - [x] **TRACE-04**: Trace events persist in the database linked to their message
-- [ ] **TRACE-05**: Traces re-render correctly when resuming a conversation
+- [x] **TRACE-05**: Traces re-render correctly when resuming a conversation
 
 ### Orchestration
 
@@ -158,7 +158,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 | TRACE-02 | Phase 6: Execution Trace System | Complete |
 | TRACE-03 | Phase 6: Execution Trace System | Complete |
 | TRACE-04 | Phase 6: Execution Trace System | Complete |
-| TRACE-05 | Phase 6: Execution Trace System | Pending |
+| TRACE-05 | Phase 6: Execution Trace System | Complete |
 | ORCH-01 | Phase 7: Orchestration Loop | Pending |
 | ORCH-02 | Phase 7: Orchestration Loop | Pending |
 | ORCH-03 | Phase 7: Orchestration Loop | Pending |
