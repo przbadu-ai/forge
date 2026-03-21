@@ -132,13 +132,64 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| _(populated by roadmapper)_ | | |
+| TEST-04 | Phase 1: Infrastructure Foundation | Pending |
+| AUTH-01 | Phase 2: Authentication | Pending |
+| AUTH-02 | Phase 2: Authentication | Pending |
+| AUTH-03 | Phase 2: Authentication | Pending |
+| AUTH-04 | Phase 2: Authentication | Pending |
+| SET-01 | Phase 3: LLM Provider Settings | Pending |
+| SET-05 | Phase 3: LLM Provider Settings | Pending |
+| UX-01 | Phase 3: LLM Provider Settings | Pending |
+| CHAT-01 | Phase 4: Core Streaming Chat | Pending |
+| CHAT-02 | Phase 4: Core Streaming Chat | Pending |
+| CHAT-03 | Phase 4: Core Streaming Chat | Pending |
+| CHAT-04 | Phase 4: Core Streaming Chat | Pending |
+| CHAT-05 | Phase 4: Core Streaming Chat | Pending |
+| CHAT-06 | Phase 4: Core Streaming Chat | Pending |
+| CHAT-07 | Phase 4: Core Streaming Chat | Pending |
+| CHAT-08 | Phase 5: Chat Completions | Pending |
+| CHAT-09 | Phase 5: Chat Completions | Pending |
+| CHAT-10 | Phase 5: Chat Completions | Pending |
+| CHAT-11 | Phase 5: Chat Completions | Pending |
+| CHAT-12 | Phase 5: Chat Completions | Pending |
+| SET-07 | Phase 5: Chat Completions | Pending |
+| UX-02 | Phase 5: Chat Completions | Pending |
+| TRACE-01 | Phase 6: Execution Trace System | Pending |
+| TRACE-02 | Phase 6: Execution Trace System | Pending |
+| TRACE-03 | Phase 6: Execution Trace System | Pending |
+| TRACE-04 | Phase 6: Execution Trace System | Pending |
+| TRACE-05 | Phase 6: Execution Trace System | Pending |
+| ORCH-01 | Phase 7: Orchestration Loop | Pending |
+| ORCH-02 | Phase 7: Orchestration Loop | Pending |
+| ORCH-03 | Phase 7: Orchestration Loop | Pending |
+| ORCH-04 | Phase 7: Orchestration Loop | Pending |
+| ORCH-05 | Phase 7: Orchestration Loop | Pending |
+| MCP-01 | Phase 8: MCP Integration | Pending |
+| MCP-02 | Phase 8: MCP Integration | Pending |
+| MCP-03 | Phase 8: MCP Integration | Pending |
+| MCP-04 | Phase 8: MCP Integration | Pending |
+| MCP-05 | Phase 8: MCP Integration | Pending |
+| SKILL-01 | Phase 9: Skills Integration | Pending |
+| SKILL-02 | Phase 9: Skills Integration | Pending |
+| SKILL-03 | Phase 9: Skills Integration | Pending |
+| RAG-01 | Phase 10: File Upload + RAG | Pending |
+| RAG-02 | Phase 10: File Upload + RAG | Pending |
+| RAG-03 | Phase 10: File Upload + RAG | Pending |
+| RAG-04 | Phase 10: File Upload + RAG | Pending |
+| RAG-05 | Phase 10: File Upload + RAG | Pending |
+| SET-02 | Phase 10: File Upload + RAG | Pending |
+| SET-03 | Phase 10: File Upload + RAG | Pending |
+| SET-04 | Phase 11: Settings Completion + Quality Gate | Pending |
+| SET-06 | Phase 11: Settings Completion + Quality Gate | Pending |
+| TEST-01 | Phase 11: Settings Completion + Quality Gate | Pending |
+| TEST-02 | Phase 11: Settings Completion + Quality Gate | Pending |
+| TEST-03 | Phase 11: Settings Completion + Quality Gate | Pending |
 
 **Coverage:**
-- v1 requirements: 42 total
-- Mapped to phases: 0
-- Unmapped: 42
+- v1 requirements: 52 total
+- Mapped to phases: 52
+- Unmapped: 0
 
 ---
 *Requirements defined: 2026-03-21*
-*Last updated: 2026-03-21 after initial definition*
+*Last updated: 2026-03-21 after roadmap creation — all 52 v1 requirements mapped*
