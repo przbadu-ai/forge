@@ -16,3 +16,7 @@ class AppSettings(SQLModel, table=True):
     # Reranker settings
     reranker_base_url: str | None = Field(default=None)
     reranker_model: str | None = Field(default=None)
+
+    # Web search settings
+    searxng_base_url: str | None = Field(default=None)
+    exa_api_key_encrypted: str | None = Field(default=None)

@@ -7,6 +7,8 @@ import { SkillsSection } from "@/components/settings/skills-section";
 import { ThemeSwitcher } from "@/components/settings/theme-switcher";
 import { GeneralSection } from "@/components/settings/GeneralSection";
 import { EmbeddingsSection } from "@/components/settings/EmbeddingsSection";
+import { WebSearchSection } from "@/components/settings/web-search-section";
+import { HealthDiagnostics } from "@/components/settings/health-diagnostics";
 import { FileList } from "@/components/files/file-list";
 
 export default function SettingsPage() {
@@ -15,10 +17,12 @@ export default function SettingsPage() {
       <TabsList>
         <TabsTrigger value="providers">LLM Providers</TabsTrigger>
         <TabsTrigger value="embeddings">Embeddings</TabsTrigger>
+        <TabsTrigger value="web-search">Web Search</TabsTrigger>
         <TabsTrigger value="files">Files</TabsTrigger>
         <TabsTrigger value="mcp-servers">MCP Servers</TabsTrigger>
         <TabsTrigger value="skills">Skills</TabsTrigger>
         <TabsTrigger value="general">General</TabsTrigger>
+        <TabsTrigger value="diagnostics">Diagnostics</TabsTrigger>
         <TabsTrigger value="appearance">Appearance</TabsTrigger>
       </TabsList>
 
@@ -28,6 +32,10 @@ export default function SettingsPage() {
 
       <TabsContent value="embeddings" className="mt-4">
         <EmbeddingsSection />
+      </TabsContent>
+
+      <TabsContent value="web-search" className="mt-4">
+        <WebSearchSection />
       </TabsContent>
 
       <TabsContent value="files" className="mt-4">
@@ -44,6 +52,10 @@ export default function SettingsPage() {
 
       <TabsContent value="general" className="mt-4">
         <GeneralSection />
+      </TabsContent>
+
+      <TabsContent value="diagnostics" className="mt-4">
+        <HealthDiagnostics />
       </TabsContent>
 
       <TabsContent value="appearance" className="mt-4">
