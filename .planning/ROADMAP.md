@@ -14,7 +14,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 
 - [x] **Phase 1: Infrastructure Foundation** - Project scaffolding, async DB engine, SQLite WAL+WAL, Alembic batch migrations, dev tooling (completed 2026-03-21)
 - [x] **Phase 2: Authentication** - Single-user login, JWT sessions, protected API routes (completed 2026-03-21)
-- [ ] **Phase 3: LLM Provider Settings** - LLM provider/model configuration, test-connection, theme
+- [x] **Phase 3: LLM Provider Settings** - LLM provider/model configuration, test-connection, theme (completed 2026-03-21)
 - [ ] **Phase 4: Core Streaming Chat** - Streaming SSE chat, conversation CRUD, markdown rendering
 - [ ] **Phase 5: Chat Completions** - System prompts, stop generation, regenerate, export, conversation search, model parameters
 - [ ] **Phase 6: Execution Trace System** - TraceEmitter, trace UI, persistence, replay on resume
@@ -36,7 +36,7 @@ Decimal phases appear between their surrounding integers in numeric order.
   3. Alembic migrations run forward and backward cleanly with batch mode enabled; `alembic upgrade head` completes without error
   4. Ruff, Black, ESLint, Prettier, mypy, and TypeScript strict mode all pass with zero violations on the starter codebase
   5. Vitest and pytest execute with zero failures on skeleton test suites
-**Plans**: TBD
+**Plans:** 3 plans
 
 Plans:
 - [x] 01-01: Backend project scaffold (FastAPI app factory, uv environment, pyproject.toml, ruff/black/mypy config)
@@ -54,7 +54,7 @@ Plans:
   3. User can log out from any page and is redirected to login
   4. Navigating to any page while unauthenticated redirects to login
   5. All FastAPI API routes return 401 without a valid session token
-**Plans**: TBD
+**Plans:** 3 plans
 
 Plans:
 - [x] 02-01: Backend auth (pwdlib bcrypt password hash, JWT token generation/validation, auth middleware, /auth endpoints)
@@ -70,10 +70,10 @@ Plans:
   2. User can click "Test Connection" and see a success or error response within a few seconds
   3. User can switch between Light, Dark, and System themes and the preference persists across page refresh
   4. Configured LLM providers and models are saved to the database and survive server restart
-**Plans**: TBD
+**Plans:** 1/1 plans complete
 
 Plans:
-- [ ] 03-01: Settings backend (LLM provider CRUD endpoints, test-connection endpoint, encrypted API key storage with SecretStr)
+- [x] 03-01: Settings backend (LLM provider CRUD endpoints, test-connection endpoint, encrypted API key storage with SecretStr)
 - [ ] 03-02: Settings frontend (Settings page shell, LLM Providers section, test-connection button, theme switcher with next-themes)
 - [ ] 03-03: Settings tests (provider CRUD, test-connection, theme persistence)
 
@@ -88,7 +88,7 @@ Plans:
   4. User can click a previous conversation in the sidebar and continue it; messages load correctly
   5. User can rename a conversation inline and the new name persists
   6. User can delete a conversation and it is removed from the sidebar
-**Plans**: TBD
+**Plans:** 3 plans
 
 Plans:
 - [ ] 04-01: Backend chat (Conversation + Message SQLModel models, migrations, CRUD endpoints, basic LLM call with openai client)
@@ -109,7 +109,7 @@ Plans:
   5. User can export a conversation as a JSON file containing all messages
   6. User can search conversations by message content and see matching results
   7. User can adjust temperature and max tokens per conversation or globally
-**Plans**: TBD
+**Plans:** 3 plans
 
 Plans:
 - [ ] 05-01: Backend completions (system prompt global + per-conversation, model parameter storage, regenerate endpoint, conversation search)
@@ -127,7 +127,7 @@ Plans:
   3. Trace events persist in the database linked to their message as a JSON blob
   4. Resuming a conversation reloads and correctly renders all trace events for every message
   5. An error during generation produces an error trace event visible in the trace panel
-**Plans**: TBD
+**Plans:** 3 plans
 
 Plans:
 - [ ] 06-01: TraceEmitter service (structured SSE events: token, run_start, run_done, run_error; JSON blob persistence on run completion)
@@ -146,7 +146,7 @@ Plans:
   3. Every executor action emits a structured trace event (tool_start, tool_end) visible in the TracePanel
   4. Each run has a lifecycle state (created, running, completed, failed, cancelled) that updates correctly
   5. Configurable timeout and retry counts are respected; a timed-out call produces an error trace event, not a silent hang
-**Plans**: TBD
+**Plans:** 3 plans
 
 Plans:
 - [ ] 07-01: Orchestrator service (model → tool dispatch → observation → repeat while-loop, stop condition handling)
@@ -165,7 +165,7 @@ Plans:
   3. A chat message that triggers an MCP tool call invokes the correct server and appends the result to the conversation
   4. MCP tool calls appear in the execution trace with full metadata (server name, tool name, input, output, status)
   5. An MCP failure or timeout shows a user-visible error status in the trace panel, not a blank or crashed UI
-**Plans**: TBD
+**Plans:** 3 plans
 
 Plans:
 - [ ] 08-01: MCP settings backend (MCP server CRUD, enable/disable, DB persistence)
@@ -182,7 +182,7 @@ Plans:
   1. User can view available skills in Settings and toggle each on or off
   2. A chat turn that triggers a skill shows the skill name, trigger, and output in the execution trace
   3. Skill execution metadata (skill name, input, output, status, timestamps) persists in the database linked to the message
-**Plans**: TBD
+**Plans:** 3 plans
 
 Plans:
 - [ ] 09-01: Skills backend (Skill model, enable/disable settings, SkillExecutor, skill trigger detection, DB persistence)
@@ -199,7 +199,7 @@ Plans:
   3. Assistant responses to document questions show source attribution: file name, chunk preview, and relevance score
   4. User can view and delete uploaded files from the file management UI
   5. User can configure the embedding model endpoint and reranker endpoint in Settings
-**Plans**: TBD
+**Plans:** 3 plans
 
 Plans:
 - [ ] 10-01: FilePipeline backend (async upload endpoint, chunking, sentence-transformers embedding, ChromaDB HTTP client storage)
@@ -220,7 +220,7 @@ Plans:
   4. `vitest` passes all frontend unit and component tests with no failures
   5. Playwright E2E tests pass for: auth flow, streaming chat, tool trace rendering, and settings persistence
   6. CI pipeline runs lint, type-check, unit/integration tests, E2E smoke, and build — all green
-**Plans**: TBD
+**Plans:** 3 plans
 
 Plans:
 - [ ] 11-01: Web search settings (SearXNG and Exa provider configuration, Settings UI)
@@ -239,7 +239,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 →
 |-------|----------------|--------|-----------|
 | 1. Infrastructure Foundation | 4/1 | Complete   | 2026-03-21 |
 | 2. Authentication | 3/1 | Complete   | 2026-03-21 |
-| 3. LLM Provider Settings | 0/3 | Not started | - |
+| 3. LLM Provider Settings | 1/1 | Complete   | 2026-03-21 |
 | 4. Core Streaming Chat | 0/5 | Not started | - |
 | 5. Chat Completions | 0/4 | Not started | - |
 | 6. Execution Trace System | 0/5 | Not started | - |

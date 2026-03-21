@@ -69,11 +69,11 @@ Requirements for initial release. Each maps to roadmap phases.
 
 ### Settings
 
-- [ ] **SET-01**: User can configure LLM providers with multiple profiles (base URL, API key, models)
+- [x] **SET-01**: User can configure LLM providers with multiple profiles (base URL, API key, models)
 - [ ] **SET-02**: User can configure embedding model endpoint
 - [ ] **SET-03**: User can configure reranker endpoint
 - [ ] **SET-04**: User can configure web search providers (SearXNG, Exa)
-- [ ] **SET-05**: User can test-connection for any configured endpoint
+- [x] **SET-05**: User can test-connection for any configured endpoint
 - [ ] **SET-06**: Health diagnostics panel shows status of all configured integrations
 - [ ] **SET-07**: User can adjust model parameters (temperature, max tokens) per conversation or globally
 
@@ -137,8 +137,8 @@ Which phases cover which requirements. Updated during roadmap creation.
 | AUTH-02 | Phase 2: Authentication | Complete |
 | AUTH-03 | Phase 2: Authentication | Complete |
 | AUTH-04 | Phase 2: Authentication | Complete |
-| SET-01 | Phase 3: LLM Provider Settings | Pending |
-| SET-05 | Phase 3: LLM Provider Settings | Pending |
+| SET-01 | Phase 3: LLM Provider Settings | Complete |
+| SET-05 | Phase 3: LLM Provider Settings | Complete |
 | UX-01 | Phase 3: LLM Provider Settings | Pending |
 | CHAT-01 | Phase 4: Core Streaming Chat | Pending |
 | CHAT-02 | Phase 4: Core Streaming Chat | Pending |

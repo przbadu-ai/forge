@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: planning
-stopped_at: Completed 02-03-PLAN.md (auth tests)
-last_updated: "2026-03-21T15:38:17.681Z"
+stopped_at: Completed 03-01-PLAN.md (settings backend)
+last_updated: "2026-03-21T15:49:15.434Z"
 last_activity: 2026-03-21
 progress:
   total_phases: 11
   completed_phases: 0
   total_plans: 0
-  completed_plans: 7
+  completed_plans: 8
   percent: 0
 ---
 
@@ -59,6 +59,7 @@ Progress: [░░░░░░░░░░] 0%
 | Phase 02 P01 | 6min | 2 tasks | 14 files |
 | Phase 02 P02 | 2min | 2 tasks | 9 files |
 | Phase 02 P03 | 3min | 2 tasks | 5 files |
+| Phase 03 P01 | 4min | 2 tasks | 9 files |
 
 ## Accumulated Context
 
@@ -88,6 +89,9 @@ Recent decisions affecting current work:
 - [Phase 02]: proxy.ts (not middleware.ts) for Next.js 16 route guard
 - [Phase 02]: Access token in React state only, optimistic proxy cookie check
 - [Phase 02]: Stateless JWT: logout test verifies cookie deletion not server-side invalidation
+- [Phase 03]: SHA-256 key derivation from SECRET_KEY for Fernet encryption (not PBKDF2)
+- [Phase 03]: Router-level Depends(get_current_user) for all settings endpoints
+- [Phase 03]: AsyncOpenAI client with 10s timeout for test-connection
 
 ### Pending Todos
 
@@ -100,6 +104,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-21T15:38:17.678Z
-Stopped at: Completed 02-03-PLAN.md (auth tests)
+Last session: 2026-03-21T15:49:15.431Z
+Stopped at: Completed 03-01-PLAN.md (settings backend)
 Resume file: None
