@@ -15,7 +15,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 1: Infrastructure Foundation** - Project scaffolding, async DB engine, SQLite WAL+WAL, Alembic batch migrations, dev tooling (completed 2026-03-21)
 - [x] **Phase 2: Authentication** - Single-user login, JWT sessions, protected API routes (completed 2026-03-21)
 - [x] **Phase 3: LLM Provider Settings** - LLM provider/model configuration, test-connection, theme (completed 2026-03-21)
-- [ ] **Phase 4: Core Streaming Chat** - Streaming SSE chat, conversation CRUD, markdown rendering
+- [x] **Phase 4: Core Streaming Chat** - Streaming SSE chat, conversation CRUD, markdown rendering (completed 2026-03-21)
 - [ ] **Phase 5: Chat Completions** - System prompts, stop generation, regenerate, export, conversation search, model parameters
 - [ ] **Phase 6: Execution Trace System** - TraceEmitter, trace UI, persistence, replay on resume
 - [ ] **Phase 7: Orchestration Loop** - Custom agentic loop, executor interfaces, timeout/retry, run state
@@ -88,14 +88,12 @@ Plans:
   4. User can click a previous conversation in the sidebar and continue it; messages load correctly
   5. User can rename a conversation inline and the new name persists
   6. User can delete a conversation and it is removed from the sidebar
-**Plans:** 3 plans
+**Plans:** 1/1 plans complete
 
 Plans:
-- [ ] 04-01: Backend chat (Conversation + Message SQLModel models, migrations, CRUD endpoints, basic LLM call with openai client)
-- [ ] 04-02: Backend SSE streaming (SSE endpoint connecting browser directly to FastAPI, token streaming, abort signal propagation)
-- [ ] 04-03: Frontend chat layout (sidebar conversation list, chat panel, message composition area)
-- [ ] 04-04: Frontend streaming + markdown (fetch+ReadableStream SSE consumer, react-markdown + rehype-highlight + rehype-sanitize)
-- [ ] 04-05: Chat tests (streaming unit tests, conversation CRUD integration, basic E2E chat flow)
+- [x] 04-01-PLAN.md — Backend chat models + CRUD + SSE streaming (Wave 1)
+- [ ] 04-02-PLAN.md — Frontend chat layout + streaming consumer + markdown rendering (Wave 2)
+- [ ] 04-03-PLAN.md — Chat tests: backend pytest + frontend Vitest + Playwright E2E (Wave 3)
 
 ### Phase 5: Chat Completions
 **Goal**: Users have full control over chat behavior including system prompts, generation control, and data export
@@ -240,7 +238,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 →
 | 1. Infrastructure Foundation | 4/1 | Complete   | 2026-03-21 |
 | 2. Authentication | 3/1 | Complete   | 2026-03-21 |
 | 3. LLM Provider Settings | 1/1 | Complete   | 2026-03-21 |
-| 4. Core Streaming Chat | 0/5 | Not started | - |
+| 4. Core Streaming Chat | 1/1 | Complete   | 2026-03-21 |
 | 5. Chat Completions | 0/4 | Not started | - |
 | 6. Execution Trace System | 0/5 | Not started | - |
 | 7. Orchestration Loop | 0/5 | Not started | - |

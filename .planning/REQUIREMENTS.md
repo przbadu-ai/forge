@@ -16,13 +16,13 @@ Requirements for initial release. Each maps to roadmap phases.
 
 ### Chat
 
-- [ ] **CHAT-01**: User can start a new chat conversation
-- [ ] **CHAT-02**: User receives streaming token output via SSE
+- [x] **CHAT-01**: User can start a new chat conversation
+- [x] **CHAT-02**: User receives streaming token output via SSE
 - [ ] **CHAT-03**: Assistant messages render markdown with syntax-highlighted code blocks
-- [ ] **CHAT-04**: User can view conversation list in sidebar
-- [ ] **CHAT-05**: User can resume a previous conversation
-- [ ] **CHAT-06**: User can rename a conversation
-- [ ] **CHAT-07**: User can delete a conversation
+- [x] **CHAT-04**: User can view conversation list in sidebar
+- [x] **CHAT-05**: User can resume a previous conversation
+- [x] **CHAT-06**: User can rename a conversation
+- [x] **CHAT-07**: User can delete a conversation
 - [ ] **CHAT-08**: User can set a global system prompt / custom instructions
 - [ ] **CHAT-09**: User can override system prompt per conversation
 - [ ] **CHAT-10**: User can regenerate the last assistant response on failure
@@ -140,13 +140,13 @@ Which phases cover which requirements. Updated during roadmap creation.
 | SET-01 | Phase 3: LLM Provider Settings | Complete |
 | SET-05 | Phase 3: LLM Provider Settings | Complete |
 | UX-01 | Phase 3: LLM Provider Settings | Pending |
-| CHAT-01 | Phase 4: Core Streaming Chat | Pending |
-| CHAT-02 | Phase 4: Core Streaming Chat | Pending |
+| CHAT-01 | Phase 4: Core Streaming Chat | Complete |
+| CHAT-02 | Phase 4: Core Streaming Chat | Complete |
 | CHAT-03 | Phase 4: Core Streaming Chat | Pending |
-| CHAT-04 | Phase 4: Core Streaming Chat | Pending |
-| CHAT-05 | Phase 4: Core Streaming Chat | Pending |
-| CHAT-06 | Phase 4: Core Streaming Chat | Pending |
-| CHAT-07 | Phase 4: Core Streaming Chat | Pending |
+| CHAT-04 | Phase 4: Core Streaming Chat | Complete |
+| CHAT-05 | Phase 4: Core Streaming Chat | Complete |
+| CHAT-06 | Phase 4: Core Streaming Chat | Complete |
+| CHAT-07 | Phase 4: Core Streaming Chat | Complete |
 | CHAT-08 | Phase 5: Chat Completions | Pending |
 | CHAT-09 | Phase 5: Chat Completions | Pending |
 | CHAT-10 | Phase 5: Chat Completions | Pending |
