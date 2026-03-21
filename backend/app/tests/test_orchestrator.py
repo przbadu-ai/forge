@@ -112,7 +112,7 @@ async def _collect_sse(orchestrator: Orchestrator, client: AsyncMock, **kwargs: 
         "max_tokens": 100,
     }
     defaults.update(kwargs)
-    return [line async for line in orchestrator.run(client=client, **defaults)]
+    return [line async for line in orchestrator.run(client=client, **defaults)]  # type: ignore[arg-type]
 
 
 # ---------- Tests ----------
