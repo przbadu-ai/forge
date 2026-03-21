@@ -10,6 +10,7 @@ from sqlalchemy import delete
 
 from app.core.database import AsyncSessionFactory
 from app.models.conversation import Conversation
+from app.models.llm_provider import LLMProvider
 from app.models.message import Message
 
 CHAT_BASE = "/api/v1/chat"
@@ -20,10 +21,11 @@ CHAT_BASE = "/api/v1/chat"
 
 @pytest_asyncio.fixture(autouse=True)
 async def _clean_chat_tables() -> None:
-    """Remove all conversations and messages before each test."""
+    """Remove all conversations, messages, and providers before each test."""
     async with AsyncSessionFactory() as session:
         await session.execute(delete(Message))
         await session.execute(delete(Conversation))
+        await session.execute(delete(LLMProvider))
         await session.commit()
 
 
