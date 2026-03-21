@@ -2,20 +2,27 @@
 
 import { cn } from "@/lib/utils";
 import { MarkdownRenderer } from "./MarkdownRenderer";
+import { TracePanel } from "./TracePanel";
 import { User, Bot } from "lucide-react";
+import type { TraceEvent } from "@/types/chat";
 
 interface MessageBubbleProps {
   role: "user" | "assistant";
   content: string;
   isStreaming?: boolean;
+  traceEvents?: TraceEvent[];
+  liveTraceEvents?: TraceEvent[];
 }
 
 export function MessageBubble({
   role,
   content,
   isStreaming,
+  traceEvents,
+  liveTraceEvents,
 }: MessageBubbleProps) {
   const isUser = role === "user";
+  const activeTraceEvents = traceEvents ?? liveTraceEvents ?? [];
 
   return (
     <div
@@ -41,6 +48,12 @@ export function MessageBubble({
             <MarkdownRenderer content={content} />
             {isStreaming && (
               <span className="ml-0.5 inline-block h-4 w-0.5 animate-pulse bg-current" />
+            )}
+            {activeTraceEvents.length > 0 && (
+              <TracePanel
+                events={activeTraceEvents}
+                isStreaming={!!isStreaming}
+              />
             )}
           </>
         )}

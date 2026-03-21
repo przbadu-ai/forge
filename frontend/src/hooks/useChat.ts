@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useAuth } from "@/context/auth-context";
 import { getMessages, regenerateLastMessage } from "@/lib/chat-api";
-import type { Message, SSEEvent } from "@/types/chat";
+import type { Message, SSEEvent, TraceEvent } from "@/types/chat";
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
 
@@ -20,6 +20,8 @@ interface UseChatReturn {
   sendMessage: (content: string) => Promise<void>;
   stopGeneration: () => void;
   regenerate: () => Promise<void>;
+  messageTraces: Record<number, TraceEvent[]>;
+  streamingTraceEvents: TraceEvent[];
 }
 
 export function useChat({
@@ -31,6 +33,9 @@ export function useChat({
   const [streamingContent, setStreamingContent] = useState<string | null>(null);
   const [isStreaming, setIsStreaming] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [streamingTraceEvents, setStreamingTraceEvents] = useState<TraceEvent[]>([]);
+  const [messageTraces, setMessageTraces] = useState<Record<number, TraceEvent[]>>({});
+  const traceEventsRef = useRef<TraceEvent[]>([]);
   const abortControllerRef = useRef<AbortController | null>(null);
   const messageCountRef = useRef(0);
 
@@ -42,6 +47,8 @@ export function useChat({
     }
 
     let cancelled = false;
+    setMessageTraces({});
+    traceEventsRef.current = [];
     getMessages(token, conversationId)
       .then((msgs) => {
         if (!cancelled) {
@@ -49,6 +56,18 @@ export function useChat({
           messageCountRef.current = msgs.filter(
             (m) => m.role === "user",
           ).length;
+          // Parse trace_data from loaded messages for replay
+          const traces: Record<number, TraceEvent[]> = {};
+          msgs.forEach((m) => {
+            if (m.role === "assistant" && m.trace_data) {
+              try {
+                traces[m.id] = JSON.parse(m.trace_data) as TraceEvent[];
+              } catch {
+                /* skip malformed trace_data */
+              }
+            }
+          });
+          setMessageTraces(traces);
         }
       })
       .catch(() => {
@@ -72,10 +91,15 @@ export function useChat({
         conversation_id: conversationId,
         role: "user",
         content,
+        trace_data: null,
         created_at: new Date().toISOString(),
       };
       setMessages((prev) => [...prev, optimisticUserMsg]);
       messageCountRef.current += 1;
+
+      // Reset trace accumulation for new stream
+      traceEventsRef.current = [];
+      setStreamingTraceEvents([]);
 
       setIsStreaming(true);
       setStreamingContent("");
@@ -129,16 +153,26 @@ export function useChat({
               if (event.type === "token") {
                 accumulated += event.delta;
                 setStreamingContent(accumulated);
+              } else if (event.type === "trace_event") {
+                traceEventsRef.current = [...traceEventsRef.current, event.event];
+                setStreamingTraceEvents(traceEventsRef.current);
               } else if (event.type === "done") {
+                // Capture trace snapshot before clearing
+                const traceSnapshot = traceEventsRef.current;
+
                 // Convert accumulated content into a Message
                 const assistantMsg: Message = {
                   id: event.message_id,
                   conversation_id: conversationId,
                   role: "assistant",
                   content: accumulated,
+                  trace_data: null,
                   created_at: new Date().toISOString(),
                 };
                 setMessages((prev) => [...prev, assistantMsg]);
+                setMessageTraces((prev) => ({ ...prev, [event.message_id]: traceSnapshot }));
+                traceEventsRef.current = [];
+                setStreamingTraceEvents([]);
                 setStreamingContent(null);
                 setIsStreaming(false);
 
@@ -147,19 +181,30 @@ export function useChat({
                   onConversationUpdated?.();
                 }
               } else if (event.type === "stopped") {
+                // Capture trace snapshot
+                const traceSnapshot = traceEventsRef.current;
+
                 // Partial content saved on backend — persist locally
                 const partialMsg: Message = {
                   id: event.message_id,
                   conversation_id: conversationId,
                   role: "assistant",
                   content: accumulated,
+                  trace_data: null,
                   created_at: new Date().toISOString(),
                 };
                 setMessages((prev) => [...prev, partialMsg]);
+                if (traceSnapshot.length > 0) {
+                  setMessageTraces((prev) => ({ ...prev, [event.message_id]: traceSnapshot }));
+                }
+                traceEventsRef.current = [];
+                setStreamingTraceEvents([]);
                 setStreamingContent(null);
                 setIsStreaming(false);
               } else if (event.type === "error") {
                 setError(event.message);
+                traceEventsRef.current = [];
+                setStreamingTraceEvents([]);
                 setStreamingContent(null);
                 setIsStreaming(false);
               }
@@ -232,5 +277,7 @@ export function useChat({
     sendMessage,
     stopGeneration,
     regenerate,
+    messageTraces,
+    streamingTraceEvents,
   };
 }

@@ -27,6 +27,8 @@ export function ChatPanel({
     sendMessage,
     stopGeneration,
     regenerate,
+    messageTraces,
+    streamingTraceEvents,
   } = useChat({ conversationId, onConversationUpdated });
 
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -115,6 +117,7 @@ export function ChatPanel({
               key={msg.id}
               role={msg.role as "user" | "assistant"}
               content={msg.content}
+              traceEvents={messageTraces[msg.id]}
             />
           ))}
 
@@ -123,6 +126,7 @@ export function ChatPanel({
               role="assistant"
               content={streamingContent}
               isStreaming
+              liveTraceEvents={streamingTraceEvents}
             />
           )}
 

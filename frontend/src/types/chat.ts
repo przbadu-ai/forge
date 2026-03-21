@@ -20,7 +20,21 @@ export interface Message {
   conversation_id: number;
   role: "user" | "assistant" | "system";
   content: string;
+  trace_data: string | null;
   created_at: string;
+}
+
+export interface TraceEvent {
+  id: string;
+  type: "run_start" | "run_end" | "token_generation" | "error";
+  name: string;
+  status: "running" | "completed" | "error";
+  started_at: string;
+  completed_at: string | null;
+  input?: unknown;
+  output?: unknown;
+  error?: string | null;
+  metadata?: Record<string, unknown> | null;
 }
 
 export interface SSETokenEvent {
@@ -39,4 +53,8 @@ export interface SSEStoppedEvent {
   type: "stopped";
   message_id: number;
 }
-export type SSEEvent = SSETokenEvent | SSEDoneEvent | SSEErrorEvent | SSEStoppedEvent;
+export interface SSETraceEvent {
+  type: "trace_event";
+  event: TraceEvent;
+}
+export type SSEEvent = SSETokenEvent | SSEDoneEvent | SSEErrorEvent | SSEStoppedEvent | SSETraceEvent;
