@@ -8,7 +8,7 @@ def _utcnow() -> datetime:
 
 
 class LLMProvider(SQLModel, table=True):
-    __tablename__ = "llm_provider"  # type: ignore[assignment]
+    __tablename__ = "llm_provider"
 
     id: int | None = Field(default=None, primary_key=True)
     name: str = Field(unique=True, index=True, max_length=100)
