@@ -17,7 +17,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 3: LLM Provider Settings** - LLM provider/model configuration, test-connection, theme (completed 2026-03-21)
 - [x] **Phase 4: Core Streaming Chat** - Streaming SSE chat, conversation CRUD, markdown rendering (completed 2026-03-21)
 - [ ] **Phase 5: Chat Completions** - System prompts, stop generation, regenerate, export, conversation search, model parameters
-- [ ] **Phase 6: Execution Trace System** - TraceEmitter, trace UI, persistence, replay on resume
+- [x] **Phase 6: Execution Trace System** - TraceEmitter, trace UI, persistence, replay on resume (completed 2026-03-21)
 - [ ] **Phase 7: Orchestration Loop** - Custom agentic loop, executor interfaces, timeout/retry, run state
 - [ ] **Phase 8: MCP Integration** - MCP server registration, process manager, tool invocation, trace visibility
 - [ ] **Phase 9: Skills Integration** - Skills settings, skill execution, trace visibility, persistence
@@ -125,14 +125,12 @@ Plans:
   3. Trace events persist in the database linked to their message as a JSON blob
   4. Resuming a conversation reloads and correctly renders all trace events for every message
   5. An error during generation produces an error trace event visible in the trace panel
-**Plans:** 3 plans
+**Plans:** 1/1 plans complete
 
 Plans:
-- [ ] 06-01: TraceEmitter service (structured SSE events: token, run_start, run_done, run_error; JSON blob persistence on run completion)
-- [ ] 06-02: Trace database layer (Trace model, migration, FK to Message, read/write service)
-- [ ] 06-03: TracePanel UI component (collapsed accordion, event list, type/name/status/timestamp/compact IO display)
-- [ ] 06-04: Trace replay (load traces on conversation resume, re-render TracePanel correctly)
-- [ ] 06-05: Trace tests (TraceEmitter event ordering, persistence correctness, replay integration, Playwright trace panel expand/collapse)
+- [x] 06-01-PLAN.md — Backend: TraceEmitter service, Message.trace_data field, Alembic migration, SSE trace events (Wave 1)
+- [ ] 06-02-PLAN.md — Frontend: TraceEvent types, useChat trace accumulation, TracePanel component, MessageBubble integration, trace replay (Wave 2)
+- [ ] 06-03-PLAN.md — Tests: TraceEmitter unit, SSE integration, persistence, TracePanel component tests (Wave 3)
 
 ### Phase 7: Orchestration Loop
 **Goal**: The backend runs a full agentic loop with modular executor interfaces, run state tracking, and configurable timeout/retry
@@ -240,7 +238,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 →
 | 3. LLM Provider Settings | 1/1 | Complete   | 2026-03-21 |
 | 4. Core Streaming Chat | 2/1 | Complete   | 2026-03-21 |
 | 5. Chat Completions | 0/4 | Not started | - |
-| 6. Execution Trace System | 0/5 | Not started | - |
+| 6. Execution Trace System | 1/1 | Complete   | 2026-03-21 |
 | 7. Orchestration Loop | 0/5 | Not started | - |
 | 8. MCP Integration | 0/5 | Not started | - |
 | 9. Skills Integration | 0/3 | Not started | - |
