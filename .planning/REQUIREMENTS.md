@@ -1,0 +1,144 @@
+# Requirements: Forge
+
+**Defined:** 2026-03-21
+**Core Value:** Every AI interaction — chat, tool call, MCP action, skill execution — is visible, persisted, and reviewable.
+
+## v1 Requirements
+
+Requirements for initial release. Each maps to roadmap phases.
+
+### Authentication
+
+- [ ] **AUTH-01**: User can log in with username and password
+- [ ] **AUTH-02**: User session persists across browser refresh
+- [ ] **AUTH-03**: User can log out from any page
+- [ ] **AUTH-04**: All API routes are protected behind authentication
+
+### Chat
+
+- [ ] **CHAT-01**: User can start a new chat conversation
+- [ ] **CHAT-02**: User receives streaming token output via SSE
+- [ ] **CHAT-03**: Assistant messages render markdown with syntax-highlighted code blocks
+- [ ] **CHAT-04**: User can view conversation list in sidebar
+- [ ] **CHAT-05**: User can resume a previous conversation
+- [ ] **CHAT-06**: User can rename a conversation
+- [ ] **CHAT-07**: User can delete a conversation
+- [ ] **CHAT-08**: User can set a global system prompt / custom instructions
+- [ ] **CHAT-09**: User can override system prompt per conversation
+- [ ] **CHAT-10**: User can regenerate the last assistant response on failure
+- [ ] **CHAT-11**: User can stop an in-progress generation
+- [ ] **CHAT-12**: User can search across all conversations by message content
+
+### Execution Trace
+
+- [ ] **TRACE-01**: Each assistant message displays an expandable execution trace section
+- [ ] **TRACE-02**: Trace shows ordered events: tool calls, MCP calls, skill triggers
+- [ ] **TRACE-03**: Each trace event shows type, name, status, timestamps, and compact input/output
+- [ ] **TRACE-04**: Trace events persist in the database linked to their message
+- [ ] **TRACE-05**: Traces re-render correctly when resuming a conversation
+
+### Orchestration
+
+- [ ] **ORCH-01**: Backend runs a custom orchestration loop (model -> tools/MCP/skills -> model)
+- [ ] **ORCH-02**: Orchestration uses modular executor interfaces (ToolExecutor, McpExecutor, SkillExecutor)
+- [ ] **ORCH-03**: TraceEmitter emits structured events for all executor actions
+- [ ] **ORCH-04**: RunStateStore tracks run lifecycle (created, running, completed, failed, cancelled)
+- [ ] **ORCH-05**: Orchestration supports configurable timeout/retry for all external calls
+
+### MCP Integration
+
+- [ ] **MCP-01**: User can register MCP servers in Settings (name, command, args, env)
+- [ ] **MCP-02**: User can enable/disable individual MCP servers
+- [ ] **MCP-03**: Chat runtime can invoke MCP tools during orchestration
+- [ ] **MCP-04**: MCP tool calls appear in the execution trace with full metadata
+- [ ] **MCP-05**: MCP failures/timeouts show user-visible error status in trace
+
+### Skills
+
+- [ ] **SKILL-01**: User can view and enable/disable skills in Settings
+- [ ] **SKILL-02**: Skill triggers and outputs appear in message execution trace
+- [ ] **SKILL-03**: Skill execution metadata persists in the database
+
+### Retrieval & Files
+
+- [ ] **RAG-01**: User can upload files (PDF, DOCX, TXT, MD) for document Q&A
+- [ ] **RAG-02**: Uploaded files are chunked and embedded into ChromaDB
+- [ ] **RAG-03**: Chat retrieves relevant chunks from ChromaDB when files are referenced
+- [ ] **RAG-04**: Assistant responses show source attribution (file name, chunk preview, relevance score)
+- [ ] **RAG-05**: User can view and manage uploaded files
+
+### Settings
+
+- [ ] **SET-01**: User can configure LLM providers with multiple profiles (base URL, API key, models)
+- [ ] **SET-02**: User can configure embedding model endpoint
+- [ ] **SET-03**: User can configure reranker endpoint
+- [ ] **SET-04**: User can configure web search providers (SearXNG, Exa)
+- [ ] **SET-05**: User can test-connection for any configured endpoint
+- [ ] **SET-06**: Health diagnostics panel shows status of all configured integrations
+- [ ] **SET-07**: User can adjust model parameters (temperature, max tokens) per conversation or globally
+
+### Theme & Export
+
+- [ ] **UX-01**: User can switch between Light, Dark, and System themes
+- [ ] **UX-02**: User can export chat sessions as JSON for backup
+
+### Testing & Quality
+
+- [ ] **TEST-01**: Every shipped feature includes corresponding tests at the appropriate layer
+- [ ] **TEST-02**: E2E tests cover: auth, chat streaming, tool trace rendering, settings persistence
+- [ ] **TEST-03**: Streaming tests verify ordered delivery, interruption handling, and trace integrity
+- [ ] **TEST-04**: CI validates: lint, type-check, unit/integration tests, E2E smoke, build
+
+## v2 Requirements
+
+Deferred to future release. Tracked but not in current roadmap.
+
+### Advanced Retrieval
+
+- **RAG-V2-01**: Semantic chunking with configurable strategies
+- **RAG-V2-02**: Hybrid search (keyword + vector)
+- **RAG-V2-03**: Graph RAG for complex document relationships
+
+### Extended Capabilities
+
+- **EXT-01**: Image generation support (DALL-E/ComfyUI integration)
+- **EXT-02**: Voice input with speech-to-text
+- **EXT-03**: Text-to-speech output
+- **EXT-04**: Conversation branching / forking
+- **EXT-05**: Parallel model comparison (side-by-side)
+
+### Multi-User
+
+- **MULTI-01**: Multi-user support with signup/login
+- **MULTI-02**: Per-user data isolation
+- **MULTI-03**: Role-based access control
+
+## Out of Scope
+
+Explicitly excluded. Documented to prevent scope creep.
+
+| Feature | Reason |
+|---------|--------|
+| OAuth / SSO | Single-user MVP doesn't need it; adds significant complexity |
+| Mobile native app | Web-first; responsive web UI is sufficient for local use |
+| Real-time collaboration | Not applicable to solo developer use case |
+| Agent frameworks (LangGraph, AutoGen) | Reduces debuggability; custom loop is more transparent |
+| Enterprise governance/audit | Not the target audience |
+| Multilingual UI | English-only for developer audience; i18n can be added later |
+
+## Traceability
+
+Which phases cover which requirements. Updated during roadmap creation.
+
+| Requirement | Phase | Status |
+|-------------|-------|--------|
+| _(populated by roadmapper)_ | | |
+
+**Coverage:**
+- v1 requirements: 42 total
+- Mapped to phases: 0
+- Unmapped: 42
+
+---
+*Requirements defined: 2026-03-21*
+*Last updated: 2026-03-21 after initial definition*
