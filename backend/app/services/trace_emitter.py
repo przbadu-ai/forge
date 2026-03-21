@@ -12,7 +12,7 @@ class TraceEvent:
     """A single trace event in an execution trace."""
 
     id: str
-    type: Literal["run_start", "run_end", "token_generation", "error"]
+    type: Literal["run_start", "run_end", "token_generation", "error", "tool_call"]
     name: str
     status: Literal["running", "completed", "error"]
     started_at: str
@@ -85,6 +85,37 @@ class TraceEmitter:
             started_at=now,
             completed_at=now,
             error=error_message,
+        )
+        self._events.append(event)
+        return event
+
+    def emit_tool_start(self, tool_name: str, tool_input: dict[str, Any]) -> TraceEvent:
+        """Create and append a tool_call start event."""
+        event = TraceEvent(
+            id=str(uuid.uuid4()),
+            type="tool_call",
+            name=tool_name,
+            status="running",
+            started_at=self._now(),
+            input=tool_input,
+        )
+        self._events.append(event)
+        return event
+
+    def emit_tool_end(
+        self, tool_name: str, output: Any, error: str | None = None
+    ) -> TraceEvent:
+        """Create and append a tool_call completion event."""
+        now = self._now()
+        event = TraceEvent(
+            id=str(uuid.uuid4()),
+            type="tool_call",
+            name=tool_name,
+            status="error" if error else "completed",
+            started_at=now,
+            completed_at=now,
+            output=output,
+            error=error,
         )
         self._events.append(event)
         return event

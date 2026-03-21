@@ -7,7 +7,6 @@ from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from openai import AsyncOpenAI
-from openai.types.chat import ChatCompletionChunk
 from pydantic import BaseModel
 from sqlalchemy import Column, delete, func, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -21,6 +20,10 @@ from app.models.llm_provider import LLMProvider
 from app.models.message import Message
 from app.models.settings import AppSettings
 from app.models.user import User
+from app.services.executors import ExecutorRegistry, ToolExecutor
+from app.services.executors.builtin_tools import BUILTIN_TOOLS
+from app.services.orchestrator import Orchestrator
+from app.services.run_state import RunStateStore
 from app.services.trace_emitter import TraceEmitter
 
 router = APIRouter(dependencies=[Depends(get_current_user)])
@@ -247,34 +250,39 @@ async def _token_generator(
 
     try:
         # Prepend system prompt if set
-        openai_messages = list(messages)
+        openai_messages: list[dict[str, Any]] = list(messages)
         if system_prompt:
             openai_messages.insert(0, {"role": "system", "content": system_prompt})
 
         client = AsyncOpenAI(base_url=base_url, api_key=api_key or "no-key")
-        response = await client.chat.completions.create(
+
+        # Set up executor registry with built-in tools
+        registry = ExecutorRegistry()
+        tool_executor = ToolExecutor()
+        for tool_name in BUILTIN_TOOLS:
+            registry.register(tool_name, tool_executor)
+
+        orchestrator = Orchestrator(
+            registry=registry,
+            tracer=tracer,
+            run_store=RunStateStore(),
+        )
+        async for sse_line in orchestrator.run(
+            client=client,
             model=model,
-            messages=openai_messages,  # type: ignore[arg-type]
-            stream=True,
+            messages=openai_messages,
             temperature=temperature,
             max_tokens=max_tokens,
-        )
-        # response is AsyncStream[ChatCompletionChunk] when stream=True
-        stream: Any = response
-        chunk: ChatCompletionChunk
-        async for chunk in stream:
-            if chunk.choices and chunk.choices[0].delta.content:
-                text = chunk.choices[0].delta.content
-                full_content += text
-                yield f"data: {json.dumps({'type': 'token', 'delta': text})}\n\n"
+        ):
+            yield sse_line
 
-        # Emit trace events for token generation and run completion
-        token_event = tracer.emit_token_generation(token_count=len(full_content))
-        yield f"data: {json.dumps({'type': 'trace_event', 'event': dataclasses.asdict(token_event)})}\n\n"
+        full_content = orchestrator.final_content
+
+        # Emit run completion trace
         end_event = tracer.end_run(success=True)
         yield f"data: {json.dumps({'type': 'trace_event', 'event': dataclasses.asdict(end_event)})}\n\n"
 
-        # After stream completes, persist assistant message with trace data
+        # After orchestrator completes, persist assistant message with trace data
         assistant_msg = Message(
             conversation_id=conversation_id,
             role="assistant",
