@@ -6,13 +6,13 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app.api.v1.router import api_router
 from app.core.config import settings
+from app.core.database import create_db_and_tables
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
-    # Startup: initialize DB tables in later plans
+    await create_db_and_tables()
     yield
-    # Shutdown: dispose engine in later plans
 
 
 def create_app() -> FastAPI:
