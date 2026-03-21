@@ -1,7 +1,9 @@
 """Integration tests for the chat CRUD and streaming API."""
 
 import json
+from typing import Any
 
+import pytest
 import pytest_asyncio
 from httpx import AsyncClient
 from sqlalchemy import delete
@@ -9,7 +11,6 @@ from sqlalchemy import delete
 from app.core.database import AsyncSessionFactory
 from app.models.conversation import Conversation
 from app.models.message import Message
-
 
 CHAT_BASE = "/api/v1/chat"
 
@@ -32,13 +33,13 @@ async def _clean_chat_tables() -> None:
 async def _create_conversation(
     auth_client: AsyncClient,
     title: str | None = None,
-) -> dict:
-    payload: dict = {}
+) -> dict[str, Any]:
+    payload: dict[str, Any] = {}
     if title is not None:
         payload["title"] = title
     resp = await auth_client.post(f"{CHAT_BASE}/conversations", json=payload)
     assert resp.status_code == 201, resp.text
-    return resp.json()
+    return resp.json()  # type: ignore[no-any-return]
 
 
 # ---------- 1. Create conversation ----------
@@ -151,9 +152,10 @@ async def test_chat_requires_auth(client: AsyncClient) -> None:
     ]
     for method, url in endpoints:
         resp = await client.request(method, url, json={})
-        assert resp.status_code in (401, 403), (
-            f"{method} {url} returned {resp.status_code}, expected 401/403"
-        )
+        assert resp.status_code in (
+            401,
+            403,
+        ), f"{method} {url} returned {resp.status_code}, expected 401/403"
 
 
 # ---------- 7. Stream endpoint exists ----------
@@ -183,7 +185,7 @@ async def test_stream_endpoint_exists(auth_client: AsyncClient) -> None:
             assert "No default LLM provider" in event["message"]
             break
     else:
-        pytest.fail("No SSE data event found in stream response")  # type: ignore[attr-defined]
+        pytest.fail("No SSE data event found in stream response")
 
 
 # ---------- 8. Conversation not found ----------

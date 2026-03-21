@@ -1,15 +1,16 @@
+import asyncio
 import json
 from collections.abc import AsyncGenerator
 from datetime import UTC, datetime
 from typing import Any
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 from openai import AsyncOpenAI
 from openai.types.chat import ChatCompletionChunk
 from pydantic import BaseModel
 from sqlalchemy import Column, delete, func, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
-from starlette.responses import StreamingResponse
+from starlette.responses import JSONResponse, StreamingResponse
 
 from app.api.v1.deps import get_current_user
 from app.core.database import get_session
@@ -17,6 +18,7 @@ from app.core.encryption import decrypt_value
 from app.models.conversation import Conversation
 from app.models.llm_provider import LLMProvider
 from app.models.message import Message
+from app.models.settings import AppSettings
 from app.models.user import User
 
 router = APIRouter(dependencies=[Depends(get_current_user)])
@@ -24,6 +26,7 @@ router = APIRouter(dependencies=[Depends(get_current_user)])
 # SQLAlchemy column references for ordering (mypy can't resolve SQLModel field descriptors)
 _conv_updated_at: Column[Any] = Conversation.updated_at  # type: ignore[assignment]
 _msg_created_at: Column[Any] = Message.created_at  # type: ignore[assignment]
+_msg_content: Column[Any] = Message.content  # type: ignore[assignment]
 
 
 # ---------- Schemas ----------
@@ -31,18 +34,27 @@ _msg_created_at: Column[Any] = Message.created_at  # type: ignore[assignment]
 
 class ConversationCreate(BaseModel):
     title: str | None = None
+    system_prompt: str | None = None
+    temperature: float | None = None
+    max_tokens: int | None = None
 
 
 class ConversationRead(BaseModel):
     id: int
     title: str
     user_id: int
+    system_prompt: str | None = None
+    temperature: float | None = None
+    max_tokens: int | None = None
     created_at: datetime
     updated_at: datetime
 
 
 class ConversationUpdate(BaseModel):
-    title: str
+    title: str | None = None
+    system_prompt: str | None = None
+    temperature: float | None = None
+    max_tokens: int | None = None
 
 
 class MessageRead(BaseModel):
@@ -55,6 +67,49 @@ class MessageRead(BaseModel):
 
 class ChatStreamRequest(BaseModel):
     content: str  # user message text
+
+
+# ---------- Helpers ----------
+
+
+def _conv_to_read(c: Conversation) -> ConversationRead:
+    return ConversationRead(
+        id=c.id,
+        title=c.title,
+        user_id=c.user_id,
+        system_prompt=c.system_prompt,
+        temperature=c.temperature,
+        max_tokens=c.max_tokens,
+        created_at=c.created_at,
+        updated_at=c.updated_at,
+    )
+
+
+async def _get_owned_conversation(
+    conversation_id: int,
+    user_id: int | None,
+    session: AsyncSession,
+) -> Conversation:
+    """Fetch a conversation owned by the user, or raise 404."""
+    result = await session.execute(
+        select(Conversation).where(
+            Conversation.id == conversation_id,  # type: ignore[arg-type]
+            Conversation.user_id == user_id,  # type: ignore[arg-type]
+        )
+    )
+    conversation = result.scalars().first()
+    if conversation is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Conversation not found")
+    return conversation
+
+
+async def _get_app_settings(session: AsyncSession) -> AppSettings:
+    """Fetch global app settings row, or return defaults."""
+    result = await session.execute(select(AppSettings))
+    settings = result.scalars().first()
+    if settings is None:
+        return AppSettings()
+    return settings
 
 
 # ---------- CRUD Endpoints ----------
@@ -71,16 +126,7 @@ async def list_conversations(
         .order_by(_conv_updated_at.desc())
     )
     conversations = result.scalars().all()
-    return [
-        ConversationRead(
-            id=c.id,
-            title=c.title,
-            user_id=c.user_id,
-            created_at=c.created_at,
-            updated_at=c.updated_at,
-        )
-        for c in conversations
-    ]
+    return [_conv_to_read(c) for c in conversations]
 
 
 @router.post(
@@ -96,17 +142,14 @@ async def create_conversation(
     conversation = Conversation(
         title=data.title or "New Conversation",
         user_id=current_user.id,
+        system_prompt=data.system_prompt,
+        temperature=data.temperature,
+        max_tokens=data.max_tokens,
     )
     session.add(conversation)
     await session.commit()
     await session.refresh(conversation)
-    return ConversationRead(
-        id=conversation.id,
-        title=conversation.title,
-        user_id=conversation.user_id,
-        created_at=conversation.created_at,
-        updated_at=conversation.updated_at,
-    )
+    return _conv_to_read(conversation)
 
 
 @router.get("/conversations/{conversation_id}/messages", response_model=list[MessageRead])
@@ -115,15 +158,7 @@ async def get_messages(
     current_user: User = Depends(get_current_user),
     session: AsyncSession = Depends(get_session),
 ) -> list[MessageRead]:
-    # Verify ownership
-    conv = await session.execute(
-        select(Conversation).where(
-            Conversation.id == conversation_id,  # type: ignore[arg-type]
-            Conversation.user_id == current_user.id,  # type: ignore[arg-type]
-        )
-    )
-    if conv.scalars().first() is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Conversation not found")
+    await _get_owned_conversation(conversation_id, current_user.id, session)
 
     result = await session.execute(
         select(Message)
@@ -150,28 +185,22 @@ async def update_conversation(
     current_user: User = Depends(get_current_user),
     session: AsyncSession = Depends(get_session),
 ) -> ConversationRead:
-    result = await session.execute(
-        select(Conversation).where(
-            Conversation.id == conversation_id,  # type: ignore[arg-type]
-            Conversation.user_id == current_user.id,  # type: ignore[arg-type]
-        )
-    )
-    conversation = result.scalars().first()
-    if conversation is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Conversation not found")
+    conversation = await _get_owned_conversation(conversation_id, current_user.id, session)
 
-    conversation.title = data.title
+    if data.title is not None:
+        conversation.title = data.title
+    if data.system_prompt is not None:
+        conversation.system_prompt = data.system_prompt
+    if data.temperature is not None:
+        conversation.temperature = data.temperature
+    if data.max_tokens is not None:
+        conversation.max_tokens = data.max_tokens
+
     conversation.updated_at = datetime.now(UTC)
     session.add(conversation)
     await session.commit()
     await session.refresh(conversation)
-    return ConversationRead(
-        id=conversation.id,
-        title=conversation.title,
-        user_id=conversation.user_id,
-        created_at=conversation.created_at,
-        updated_at=conversation.updated_at,
-    )
+    return _conv_to_read(conversation)
 
 
 @router.delete(
@@ -183,15 +212,7 @@ async def delete_conversation(
     current_user: User = Depends(get_current_user),
     session: AsyncSession = Depends(get_session),
 ) -> None:
-    result = await session.execute(
-        select(Conversation).where(
-            Conversation.id == conversation_id,  # type: ignore[arg-type]
-            Conversation.user_id == current_user.id,  # type: ignore[arg-type]
-        )
-    )
-    conversation = result.scalars().first()
-    if conversation is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Conversation not found")
+    conversation = await _get_owned_conversation(conversation_id, current_user.id, session)
 
     # Delete messages first (cascade manually for SQLite compatibility)
     await session.execute(
@@ -211,14 +232,24 @@ async def _token_generator(
     model: str,
     conversation_id: int,
     session: AsyncSession,
+    system_prompt: str | None = None,
+    temperature: float = 0.7,
+    max_tokens: int = 2048,
 ) -> AsyncGenerator[str, None]:
+    full_content = ""
     try:
+        # Prepend system prompt if set
+        openai_messages = list(messages)
+        if system_prompt:
+            openai_messages.insert(0, {"role": "system", "content": system_prompt})
+
         client = AsyncOpenAI(base_url=base_url, api_key=api_key or "no-key")
-        full_content = ""
         response = await client.chat.completions.create(
             model=model,
-            messages=messages,  # type: ignore[arg-type]
+            messages=openai_messages,  # type: ignore[arg-type]
             stream=True,
+            temperature=temperature,
+            max_tokens=max_tokens,
         )
         # response is AsyncStream[ChatCompletionChunk] when stream=True
         stream: Any = response
@@ -244,7 +275,40 @@ async def _token_generator(
         await session.commit()
         await session.refresh(assistant_msg)
         yield f"data: {json.dumps({'type': 'done', 'message_id': assistant_msg.id})}\n\n"
+    except (asyncio.CancelledError, GeneratorExit):
+        # Client disconnected -- save partial content if any was received
+        if full_content:
+            assistant_msg = Message(
+                conversation_id=conversation_id,
+                role="assistant",
+                content=full_content,
+            )
+            session.add(assistant_msg)
+            await session.execute(
+                update(Conversation)
+                .where(Conversation.id == conversation_id)  # type: ignore[arg-type]
+                .values(updated_at=datetime.now(UTC))
+            )
+            await session.commit()
+            await session.refresh(assistant_msg)
+            yield f"data: {json.dumps({'type': 'stopped', 'message_id': assistant_msg.id})}\n\n"
     except Exception as e:
+        # Save partial content on error too
+        if full_content:
+            assistant_msg = Message(
+                conversation_id=conversation_id,
+                role="assistant",
+                content=full_content,
+            )
+            session.add(assistant_msg)
+            await session.execute(
+                update(Conversation)
+                .where(Conversation.id == conversation_id)  # type: ignore[arg-type]
+                .values(updated_at=datetime.now(UTC))
+            )
+            await session.commit()
+            await session.refresh(assistant_msg)
+            yield f"data: {json.dumps({'type': 'stopped', 'message_id': assistant_msg.id})}\n\n"
         yield f"data: {json.dumps({'type': 'error', 'message': str(e)})}\n\n"
 
 
@@ -255,16 +319,7 @@ async def stream_chat(
     current_user: User = Depends(get_current_user),
     session: AsyncSession = Depends(get_session),
 ) -> StreamingResponse:
-    # Verify conversation belongs to current user
-    result = await session.execute(
-        select(Conversation).where(
-            Conversation.id == conversation_id,  # type: ignore[arg-type]
-            Conversation.user_id == current_user.id,  # type: ignore[arg-type]
-        )
-    )
-    conversation = result.scalars().first()
-    if conversation is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Conversation not found")
+    conversation = await _get_owned_conversation(conversation_id, current_user.id, session)
 
     # Persist user message
     user_msg = Message(
@@ -326,6 +381,18 @@ async def stream_chat(
     history = history_result.scalars().all()
     openai_messages = [{"role": m.role, "content": m.content} for m in history]
 
+    # Resolve effective settings (conversation override > global)
+    app_settings = await _get_app_settings(session)
+    effective_system_prompt = conversation.system_prompt or app_settings.system_prompt
+    effective_temperature = (
+        conversation.temperature
+        if conversation.temperature is not None
+        else app_settings.temperature
+    )
+    effective_max_tokens = (
+        conversation.max_tokens if conversation.max_tokens is not None else app_settings.max_tokens
+    )
+
     return StreamingResponse(
         _token_generator(
             messages=openai_messages,
@@ -334,7 +401,104 @@ async def stream_chat(
             model=model_name,
             conversation_id=conversation_id,
             session=session,
+            system_prompt=effective_system_prompt,
+            temperature=effective_temperature,
+            max_tokens=effective_max_tokens,
         ),
         media_type="text/event-stream",
         headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
     )
+
+
+# ---------- Regenerate Endpoint ----------
+
+
+@router.post("/conversations/{conversation_id}/regenerate")
+async def regenerate(
+    conversation_id: int,
+    current_user: User = Depends(get_current_user),
+    session: AsyncSession = Depends(get_session),
+) -> dict[str, str]:
+    await _get_owned_conversation(conversation_id, current_user.id, session)
+
+    # Find last message
+    result = await session.execute(
+        select(Message)
+        .where(Message.conversation_id == conversation_id)  # type: ignore[arg-type]
+        .order_by(_msg_created_at.desc())
+        .limit(1)
+    )
+    last_msg = result.scalars().first()
+
+    if last_msg is None or last_msg.role != "assistant":
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="No assistant message to regenerate",
+        )
+
+    await session.delete(last_msg)
+    await session.commit()
+    return {"status": "ok"}
+
+
+# ---------- Export Endpoint ----------
+
+
+@router.get("/conversations/{conversation_id}/export")
+async def export_conversation(
+    conversation_id: int,
+    current_user: User = Depends(get_current_user),
+    session: AsyncSession = Depends(get_session),
+) -> JSONResponse:
+    conversation = await _get_owned_conversation(conversation_id, current_user.id, session)
+
+    result = await session.execute(
+        select(Message)
+        .where(Message.conversation_id == conversation_id)  # type: ignore[arg-type]
+        .order_by(_msg_created_at.asc())
+    )
+    messages = result.scalars().all()
+
+    export_data = {
+        "id": conversation.id,
+        "title": conversation.title,
+        "messages": [
+            {
+                "role": m.role,
+                "content": m.content,
+                "created_at": m.created_at.isoformat(),
+            }
+            for m in messages
+        ],
+    }
+
+    return JSONResponse(
+        content=export_data,
+        headers={
+            "Content-Disposition": f'attachment; filename="conversation-{conversation_id}.json"'
+        },
+    )
+
+
+# ---------- Search Endpoint ----------
+
+
+@router.get("/search", response_model=list[ConversationRead])
+async def search_conversations(
+    q: str = Query(..., min_length=1),
+    current_user: User = Depends(get_current_user),
+    session: AsyncSession = Depends(get_session),
+) -> list[ConversationRead]:
+    pattern = f"%{q}%"
+    result = await session.execute(
+        select(Conversation)
+        .join(Message, Message.conversation_id == Conversation.id)  # type: ignore[arg-type]
+        .where(
+            Conversation.user_id == current_user.id,  # type: ignore[arg-type]
+            _msg_content.like(pattern),
+        )
+        .distinct()
+        .order_by(_conv_updated_at.desc())
+    )
+    conversations = result.scalars().all()
+    return [_conv_to_read(c) for c in conversations]

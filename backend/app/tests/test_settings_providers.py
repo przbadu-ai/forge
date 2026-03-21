@@ -1,5 +1,7 @@
 """Integration tests for the LLM provider settings API."""
 
+from typing import Any
+
 import pytest_asyncio
 from httpx import AsyncClient
 from sqlalchemy import delete, select
@@ -7,7 +9,6 @@ from sqlalchemy import delete, select
 from app.core.database import AsyncSessionFactory
 from app.core.encryption import decrypt_value
 from app.models.llm_provider import LLMProvider
-
 
 PROVIDERS_BASE = "/api/v1/settings/providers"
 PROVIDERS_URL = f"{PROVIDERS_BASE}/"  # trailing slash for collection endpoints
@@ -35,7 +36,7 @@ async def _create_provider(
     api_key: str = "sk-test-key-123",
     models: list[str] | None = None,
     is_default: bool = False,
-) -> dict:
+) -> dict[str, Any]:
     resp = await auth_client.post(
         PROVIDERS_URL,
         json={
@@ -47,7 +48,7 @@ async def _create_provider(
         },
     )
     assert resp.status_code == 201, resp.text
-    return resp.json()
+    return resp.json()  # type: ignore[no-any-return]
 
 
 # ---------- 1. Auth ----------
@@ -126,15 +127,11 @@ async def test_delete_provider(auth_client: AsyncClient) -> None:
 async def test_api_key_encrypted_in_db(auth_client: AsyncClient) -> None:
     """The api_key_encrypted column is NOT plaintext; it decrypts to original."""
     plaintext_key = "sk-super-secret-key-abc123"
-    created = await _create_provider(
-        auth_client, name="EncTest", api_key=plaintext_key
-    )
+    created = await _create_provider(auth_client, name="EncTest", api_key=plaintext_key)
 
     # Access the DB directly through the shared session factory
     async with AsyncSessionFactory() as session:
-        result = await session.execute(
-            select(LLMProvider).where(LLMProvider.id == created["id"])
-        )
+        result = await session.execute(select(LLMProvider).where(LLMProvider.id == created["id"]))
         provider = result.scalar_one()
         # The stored value must not be the plaintext
         assert provider.api_key_encrypted != plaintext_key
@@ -148,9 +145,7 @@ async def test_api_key_encrypted_in_db(auth_client: AsyncClient) -> None:
 
 async def test_api_key_not_in_response(auth_client: AsyncClient) -> None:
     """Neither POST nor GET responses contain the api_key field."""
-    created = await _create_provider(
-        auth_client, name="NoKeyResp", api_key="sk-hidden"
-    )
+    created = await _create_provider(auth_client, name="NoKeyResp", api_key="sk-hidden")
     assert "api_key" not in created
     assert "api_key_encrypted" not in created
 
@@ -165,14 +160,10 @@ async def test_api_key_not_in_response(auth_client: AsyncClient) -> None:
 
 async def test_is_default_exclusivity(auth_client: AsyncClient) -> None:
     """Setting a new provider as default unsets the previous default."""
-    first = await _create_provider(
-        auth_client, name="Default1", is_default=True
-    )
+    first = await _create_provider(auth_client, name="Default1", is_default=True)
     assert first["is_default"] is True
 
-    second = await _create_provider(
-        auth_client, name="Default2", is_default=True
-    )
+    second = await _create_provider(auth_client, name="Default2", is_default=True)
     assert second["is_default"] is True
 
     # Re-fetch all providers
