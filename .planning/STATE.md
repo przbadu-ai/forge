@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Completed 07-02-PLAN.md (orchestration tests)
-last_updated: "2026-03-21T17:23:07Z"
+stopped_at: Completed 08-01-PLAN.md (MCP backend)
+last_updated: "2026-03-21T17:38:46Z"
 last_activity: 2026-03-21
 progress:
   total_phases: 11
   completed_phases: 0
   total_plans: 0
-  completed_plans: 16
+  completed_plans: 17
   percent: 0
 ---
 
@@ -21,12 +21,12 @@ progress:
 See: .planning/PROJECT.md (updated 2026-03-21)
 
 **Core value:** Every AI interaction — chat, tool call, MCP action, skill execution — is visible, persisted, and reviewable.
-**Current focus:** Phase 7 - Orchestration Loop
+**Current focus:** Phase 8 - MCP Integration
 
 ## Current Position
 
-Phase: 7 of 11 (Orchestration Loop)
-Plan: 2 of 2 in current phase (complete)
+Phase: 8 of 11 (MCP Integration)
+Plan: 1 of 2 in current phase (complete)
 Status: Executing
 Last activity: 2026-03-21
 
@@ -68,6 +68,7 @@ Progress: [░░░░░░░░░░] 0%
 | Phase 06 P03 | 3min | 3 tasks | 3 files |
 | Phase 07 P01 | 5min | 3 tasks | 9 files |
 | Phase 07 P02 | 2min | 3 tasks | 3 files |
+| Phase 08 P01 | 7min | 3 tasks | 14 files |
 
 ## Accumulated Context
 
@@ -113,6 +114,10 @@ Recent decisions affecting current work:
 - [Phase 07]: Non-streaming LLM call in Orchestrator to inspect finish_reason and tool_calls
 - [Phase 07]: Trace emit calls in Orchestrator, not ToolExecutor, for clean separation
 - [Phase 07]: RunStatus uses enum.StrEnum per ruff UP042
+- [Phase 08]: MCP tool namespacing as server_name.tool_name for ExecutorRegistry
+- [Phase 08]: MCP tool discovery per-chat-turn (not app startup) for fresh tool lists
+- [Phase 08]: McpExecutor uses stdio_client context manager per invocation (not persistent connection)
+- [Phase 08]: PATCH for toggle endpoint (RESTful idempotent state change)
 
 ### Pending Todos
 
@@ -125,6 +130,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-21T17:23:07Z
-Stopped at: Completed 07-02-PLAN.md (orchestration tests)
+Last session: 2026-03-21T17:38:46Z
+Stopped at: Completed 08-01-PLAN.md (MCP backend)
 Resume file: None

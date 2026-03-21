@@ -142,14 +142,11 @@ Plans:
   3. Every executor action emits a structured trace event (tool_start, tool_end) visible in the TracePanel
   4. Each run has a lifecycle state (created, running, completed, failed, cancelled) that updates correctly
   5. Configurable timeout and retry counts are respected; a timed-out call produces an error trace event, not a silent hang
-**Plans:** 3 plans
+**Plans:** 2 plans
 
 Plans:
-- [ ] 07-01: Orchestrator service (model → tool dispatch → observation → repeat while-loop, stop condition handling)
-- [ ] 07-02: Executor interfaces (BaseExecutor protocol, executor registry, ToolExecutor for built-in tools)
-- [ ] 07-03: RunStateStore (run lifecycle tracking, created/running/completed/failed/cancelled states, DB persistence)
-- [ ] 07-04: Timeout and retry (configurable per-provider timeout, retry with backoff, timeout trace events)
-- [ ] 07-05: Orchestration tests (loop unit tests with mock executors, run state transitions, timeout behavior, trace event emission)
+- [ ] 07-01-PLAN.md — Backend: Orchestrator service, BaseExecutor protocol, ExecutorRegistry, ToolExecutor, RunStateStore, current_datetime built-in tool, chat.py refactor, timeout/retry (Wave 1)
+- [ ] 07-02-PLAN.md — Tests: Orchestrator unit tests with mock executors, RunState lifecycle tests, orchestration integration tests via SSE, timeout behavior (Wave 2)
 
 ### Phase 8: MCP Integration
 **Goal**: Users can register MCP servers and Forge invokes their tools during orchestration with full trace visibility
@@ -161,14 +158,11 @@ Plans:
   3. A chat message that triggers an MCP tool call invokes the correct server and appends the result to the conversation
   4. MCP tool calls appear in the execution trace with full metadata (server name, tool name, input, output, status)
   5. An MCP failure or timeout shows a user-visible error status in the trace panel, not a blank or crashed UI
-**Plans:** 3 plans
+**Plans:** 2 plans
 
 Plans:
-- [ ] 08-01: MCP settings backend (MCP server CRUD, enable/disable, DB persistence)
-- [ ] 08-02: McpProcessManager (subprocess lifecycle: start, health-check, clean shutdown with SIGTERM/SIGKILL, orphan cleanup on startup)
-- [ ] 08-03: McpExecutor (MCP SDK client, tool discovery, tool invocation, error/timeout handling)
-- [ ] 08-04: MCP settings UI (register/edit/remove MCP servers, enable/disable toggle)
-- [ ] 08-05: MCP tests (process lifecycle, tool invocation with mock MCP server, error states, trace event emission)
+- [x] 08-01-PLAN.md — Backend: McpServer model + migration, CRUD API, McpProcessManager, McpExecutor, mcp package, backend tests (Wave 1)
+- [ ] 08-02-PLAN.md — Frontend: mcp-api.ts client, McpServersSection + card + form components, Settings tab, frontend tests (Wave 2)
 
 ### Phase 9: Skills Integration
 **Goal**: Users can enable agent skills and skill execution is visible and persisted in the trace
@@ -239,8 +233,8 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 →
 | 4. Core Streaming Chat | 2/1 | Complete   | 2026-03-21 |
 | 5. Chat Completions | 0/4 | Not started | - |
 | 6. Execution Trace System | 3/1 | Complete   | 2026-03-21 |
-| 7. Orchestration Loop | 0/5 | Not started | - |
-| 8. MCP Integration | 0/5 | Not started | - |
+| 7. Orchestration Loop | 2/2 | Complete | 2026-03-21 |
+| 8. MCP Integration | 1/2 | In progress | - |
 | 9. Skills Integration | 0/3 | Not started | - |
 | 10. File Upload + RAG | 0/6 | Not started | - |
 | 11. Settings Completion + Quality Gate | 0/6 | Not started | - |

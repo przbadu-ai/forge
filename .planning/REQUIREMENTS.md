@@ -49,9 +49,9 @@ Requirements for initial release. Each maps to roadmap phases.
 
 - [ ] **MCP-01**: User can register MCP servers in Settings (name, command, args, env)
 - [ ] **MCP-02**: User can enable/disable individual MCP servers
-- [ ] **MCP-03**: Chat runtime can invoke MCP tools during orchestration
-- [ ] **MCP-04**: MCP tool calls appear in the execution trace with full metadata
-- [ ] **MCP-05**: MCP failures/timeouts show user-visible error status in trace
+- [x] **MCP-03**: Chat runtime can invoke MCP tools during orchestration
+- [x] **MCP-04**: MCP tool calls appear in the execution trace with full metadata
+- [x] **MCP-05**: MCP failures/timeouts show user-visible error status in trace
 
 ### Skills
 
@@ -166,9 +166,9 @@ Which phases cover which requirements. Updated during roadmap creation.
 | ORCH-05 | Phase 7: Orchestration Loop | Pending |
 | MCP-01 | Phase 8: MCP Integration | Pending |
 | MCP-02 | Phase 8: MCP Integration | Pending |
-| MCP-03 | Phase 8: MCP Integration | Pending |
-| MCP-04 | Phase 8: MCP Integration | Pending |
-| MCP-05 | Phase 8: MCP Integration | Pending |
+| MCP-03 | Phase 8: MCP Integration | Complete |
+| MCP-04 | Phase 8: MCP Integration | Complete |
+| MCP-05 | Phase 8: MCP Integration | Complete |
 | SKILL-01 | Phase 9: Skills Integration | Pending |
 | SKILL-02 | Phase 9: Skills Integration | Pending |
 | SKILL-03 | Phase 9: Skills Integration | Pending |
