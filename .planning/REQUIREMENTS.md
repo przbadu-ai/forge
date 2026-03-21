@@ -87,7 +87,7 @@ Requirements for initial release. Each maps to roadmap phases.
 - [ ] **TEST-01**: Every shipped feature includes corresponding tests at the appropriate layer
 - [ ] **TEST-02**: E2E tests cover: auth, chat streaming, tool trace rendering, settings persistence
 - [ ] **TEST-03**: Streaming tests verify ordered delivery, interruption handling, and trace integrity
-- [ ] **TEST-04**: CI validates: lint, type-check, unit/integration tests, E2E smoke, build
+- [x] **TEST-04**: CI validates: lint, type-check, unit/integration tests, E2E smoke, build
 
 ## v2 Requirements
 
@@ -132,7 +132,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| TEST-04 | Phase 1: Infrastructure Foundation | Pending |
+| TEST-04 | Phase 1: Infrastructure Foundation | Complete |
 | AUTH-01 | Phase 2: Authentication | Pending |
 | AUTH-02 | Phase 2: Authentication | Pending |
 | AUTH-03 | Phase 2: Authentication | Pending |

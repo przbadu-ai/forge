@@ -12,7 +12,7 @@ Forge is built in eleven dependency-ordered phases, each delivering a coherent s
 
 Decimal phases appear between their surrounding integers in numeric order.
 
-- [ ] **Phase 1: Infrastructure Foundation** - Project scaffolding, async DB engine, SQLite WAL+WAL, Alembic batch migrations, dev tooling
+- [x] **Phase 1: Infrastructure Foundation** - Project scaffolding, async DB engine, SQLite WAL+WAL, Alembic batch migrations, dev tooling (completed 2026-03-21)
 - [ ] **Phase 2: Authentication** - Single-user login, JWT sessions, protected API routes
 - [ ] **Phase 3: LLM Provider Settings** - LLM provider/model configuration, test-connection, theme
 - [ ] **Phase 4: Core Streaming Chat** - Streaming SSE chat, conversation CRUD, markdown rendering
@@ -39,7 +39,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 **Plans**: TBD
 
 Plans:
-- [ ] 01-01: Backend project scaffold (FastAPI app factory, uv environment, pyproject.toml, ruff/black/mypy config)
+- [x] 01-01: Backend project scaffold (FastAPI app factory, uv environment, pyproject.toml, ruff/black/mypy config)
 - [ ] 01-02: Database layer (SQLite engine with WAL+busy_timeout, SQLModel base models, Alembic with batch mode)
 - [ ] 01-03: Frontend project scaffold (Next.js 16 App Router, TypeScript strict, shadcn/ui, Tailwind, ESLint, Prettier, Vitest)
 - [ ] 01-04: Dev tooling (Makefile/scripts for dev/test/lint, CI skeleton, directory structure)
@@ -237,7 +237,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 →
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Infrastructure Foundation | 0/4 | Not started | - |
+| 1. Infrastructure Foundation | 1/1 | Complete   | 2026-03-21 |
 | 2. Authentication | 0/3 | Not started | - |
 | 3. LLM Provider Settings | 0/3 | Not started | - |
 | 4. Core Streaming Chat | 0/5 | Not started | - |
