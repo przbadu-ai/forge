@@ -41,9 +41,16 @@ export interface SSETokenEvent {
   type: "token";
   delta: string;
 }
+export interface SourceCitationData {
+  file_name: string;
+  chunk_text: string;
+  score: number;
+}
+
 export interface SSEDoneEvent {
   type: "done";
   message_id: number;
+  sources?: SourceCitationData[];
 }
 export interface SSEErrorEvent {
   type: "error";

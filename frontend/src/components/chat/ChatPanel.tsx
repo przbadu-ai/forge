@@ -29,6 +29,7 @@ export function ChatPanel({
     regenerate,
     messageTraces,
     streamingTraceEvents,
+    messageSources,
   } = useChat({ conversationId, onConversationUpdated });
 
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -118,6 +119,7 @@ export function ChatPanel({
               role={msg.role as "user" | "assistant"}
               content={msg.content}
               traceEvents={messageTraces[msg.id]}
+              sources={messageSources[msg.id]}
             />
           ))}
 

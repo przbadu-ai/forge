@@ -6,12 +6,16 @@ import { McpServersSection } from "@/components/settings/mcp-servers-section";
 import { SkillsSection } from "@/components/settings/skills-section";
 import { ThemeSwitcher } from "@/components/settings/theme-switcher";
 import { GeneralSection } from "@/components/settings/GeneralSection";
+import { EmbeddingsSection } from "@/components/settings/EmbeddingsSection";
+import { FileList } from "@/components/files/file-list";
 
 export default function SettingsPage() {
   return (
     <Tabs defaultValue="providers">
       <TabsList>
         <TabsTrigger value="providers">LLM Providers</TabsTrigger>
+        <TabsTrigger value="embeddings">Embeddings</TabsTrigger>
+        <TabsTrigger value="files">Files</TabsTrigger>
         <TabsTrigger value="mcp-servers">MCP Servers</TabsTrigger>
         <TabsTrigger value="skills">Skills</TabsTrigger>
         <TabsTrigger value="general">General</TabsTrigger>
@@ -20,6 +24,14 @@ export default function SettingsPage() {
 
       <TabsContent value="providers" className="mt-4">
         <ProvidersSection />
+      </TabsContent>
+
+      <TabsContent value="embeddings" className="mt-4">
+        <EmbeddingsSection />
+      </TabsContent>
+
+      <TabsContent value="files" className="mt-4">
+        <FileList />
       </TabsContent>
 
       <TabsContent value="mcp-servers" className="mt-4">

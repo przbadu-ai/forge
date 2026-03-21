@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useAuth } from "@/context/auth-context";
 import { getMessages, regenerateLastMessage } from "@/lib/chat-api";
-import type { Message, SSEEvent, TraceEvent } from "@/types/chat";
+import type { Message, SourceCitationData, SSEEvent, TraceEvent } from "@/types/chat";
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
 
@@ -22,6 +22,7 @@ interface UseChatReturn {
   regenerate: () => Promise<void>;
   messageTraces: Record<number, TraceEvent[]>;
   streamingTraceEvents: TraceEvent[];
+  messageSources: Record<number, SourceCitationData[]>;
 }
 
 export function useChat({
@@ -35,6 +36,7 @@ export function useChat({
   const [error, setError] = useState<string | null>(null);
   const [streamingTraceEvents, setStreamingTraceEvents] = useState<TraceEvent[]>([]);
   const [messageTraces, setMessageTraces] = useState<Record<number, TraceEvent[]>>({});
+  const [messageSources, setMessageSources] = useState<Record<number, SourceCitationData[]>>({});
   const traceEventsRef = useRef<TraceEvent[]>([]);
   const abortControllerRef = useRef<AbortController | null>(null);
   const messageCountRef = useRef(0);
@@ -48,6 +50,7 @@ export function useChat({
 
     let cancelled = false;
     setMessageTraces({});
+    setMessageSources({});
     traceEventsRef.current = [];
     getMessages(token, conversationId)
       .then((msgs) => {
@@ -171,6 +174,9 @@ export function useChat({
                 };
                 setMessages((prev) => [...prev, assistantMsg]);
                 setMessageTraces((prev) => ({ ...prev, [event.message_id]: traceSnapshot }));
+                if (event.sources && event.sources.length > 0) {
+                  setMessageSources((prev) => ({ ...prev, [event.message_id]: event.sources! }));
+                }
                 traceEventsRef.current = [];
                 setStreamingTraceEvents([]);
                 setStreamingContent(null);
@@ -279,5 +285,6 @@ export function useChat({
     regenerate,
     messageTraces,
     streamingTraceEvents,
+    messageSources,
   };
 }
