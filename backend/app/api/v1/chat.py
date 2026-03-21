@@ -21,11 +21,13 @@ from app.models.mcp_server import McpServer
 from app.models.message import Message
 from app.models.settings import AppSettings
 from app.models.skill import Skill
+from app.models.uploaded_file import UploadedFile
 from app.models.user import User
 from app.services.executors import ExecutorRegistry, SkillExecutor, ToolExecutor
 from app.services.executors.builtin_tools import BUILTIN_TOOLS
 from app.services.executors.mcp_executor import discover_and_register_mcp_tools
 from app.services.orchestrator import Orchestrator
+from app.services.retrieval_service import format_context_for_prompt, retrieve
 from app.services.run_state import RunStateStore
 from app.services.trace_emitter import TraceEmitter
 
@@ -65,12 +67,19 @@ class ConversationUpdate(BaseModel):
     max_tokens: int | None = None
 
 
+class SourceInfo(BaseModel):
+    file_name: str
+    chunk_text: str
+    score: float
+
+
 class MessageRead(BaseModel):
     id: int
     conversation_id: int
     role: str
     content: str
     trace_data: str | None = None
+    sources: list[SourceInfo] | None = None
     created_at: datetime
 
 
@@ -247,6 +256,7 @@ async def _token_generator(
     max_tokens: int = 2048,
 ) -> AsyncGenerator[str, None]:
     full_content = ""
+    sources_data: list[dict[str, Any]] = []
     tracer = TraceEmitter()
     run_event = tracer.start_run(name="chat_turn")
     yield f"data: {json.dumps({'type': 'trace_event', 'event': dataclasses.asdict(run_event)})}\n\n"
@@ -256,6 +266,55 @@ async def _token_generator(
         openai_messages: list[dict[str, Any]] = list(messages)
         if system_prompt:
             openai_messages.insert(0, {"role": "system", "content": system_prompt})
+
+        # RAG: check if user has uploaded files and retrieve relevant context
+        file_result = await session.execute(
+            select(UploadedFile).where(
+                UploadedFile.status == "ready",  # type: ignore[arg-type]
+            )
+        )
+        ready_files = list(file_result.scalars().all())
+
+        if ready_files:
+            # Get the user's latest message for retrieval query
+            user_query = messages[-1]["content"] if messages else ""
+            if user_query:
+                app_settings_result = await session.execute(select(AppSettings))
+                app_settings_row = app_settings_result.scalars().first()
+                emb_base = app_settings_row.embedding_base_url if app_settings_row else None
+                emb_model = app_settings_row.embedding_model if app_settings_row else None
+
+                sources_data = await retrieve(
+                    query=user_query,
+                    top_k=5,
+                    embedding_base_url=emb_base,
+                    embedding_model=emb_model,
+                )
+
+                if sources_data:
+                    # Build file name mapping
+                    file_names: dict[int, str] = {
+                        f.id: f.original_name for f in ready_files if f.id is not None
+                    }
+                    rag_context = format_context_for_prompt(sources_data, file_names)
+
+                    # Inject RAG context into system message
+                    if openai_messages and openai_messages[0]["role"] == "system":
+                        openai_messages[0]["content"] += "\n\n" + rag_context
+                    else:
+                        openai_messages.insert(0, {"role": "system", "content": rag_context})
+
+                    # Emit retrieval trace event
+                    retrieval_event = tracer.emit_tool_start(
+                        "rag_retrieval",
+                        {"query": user_query[:100], "sources_found": len(sources_data)},
+                    )
+                    yield f"data: {json.dumps({'type': 'trace_event', 'event': dataclasses.asdict(retrieval_event)})}\n\n"
+                    retrieval_end = tracer.emit_tool_end(
+                        "rag_retrieval",
+                        {"sources": len(sources_data)},
+                    )
+                    yield f"data: {json.dumps({'type': 'trace_event', 'event': dataclasses.asdict(retrieval_end)})}\n\n"
 
         client = AsyncOpenAI(base_url=base_url, api_key=api_key or "no-key")
 
@@ -307,6 +366,23 @@ async def _token_generator(
         end_event = tracer.end_run(success=True)
         yield f"data: {json.dumps({'type': 'trace_event', 'event': dataclasses.asdict(end_event)})}\n\n"
 
+        # Build sources metadata for persistence
+        sources_meta: list[dict[str, Any]] = []
+        if sources_data:
+            file_names_map: dict[int, str] = {}
+            for f in ready_files:
+                if f.id is not None:
+                    file_names_map[f.id] = f.original_name
+            for src in sources_data:
+                fid = src.get("file_id")
+                sources_meta.append(
+                    {
+                        "file_name": file_names_map.get(fid, f"File {fid}") if fid else "Unknown",
+                        "chunk_text": (src.get("chunk_text", ""))[:200],
+                        "score": src.get("score", 0.0),
+                    }
+                )
+
         # After orchestrator completes, persist assistant message with trace data
         assistant_msg = Message(
             conversation_id=conversation_id,
@@ -322,7 +398,11 @@ async def _token_generator(
         )
         await session.commit()
         await session.refresh(assistant_msg)
-        yield f"data: {json.dumps({'type': 'done', 'message_id': assistant_msg.id})}\n\n"
+
+        done_data: dict[str, Any] = {"type": "done", "message_id": assistant_msg.id}
+        if sources_meta:
+            done_data["sources"] = sources_meta
+        yield f"data: {json.dumps(done_data)}\n\n"
     except (asyncio.CancelledError, GeneratorExit):
         # Client disconnected -- save partial content if any was received
         tracer.end_run(success=False)
