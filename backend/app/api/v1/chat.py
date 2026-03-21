@@ -1,4 +1,5 @@
 import asyncio
+import dataclasses
 import json
 from collections.abc import AsyncGenerator
 from datetime import UTC, datetime
@@ -20,6 +21,7 @@ from app.models.llm_provider import LLMProvider
 from app.models.message import Message
 from app.models.settings import AppSettings
 from app.models.user import User
+from app.services.trace_emitter import TraceEmitter
 
 router = APIRouter(dependencies=[Depends(get_current_user)])
 
@@ -62,6 +64,7 @@ class MessageRead(BaseModel):
     conversation_id: int
     role: str
     content: str
+    trace_data: str | None = None
     created_at: datetime
 
 
@@ -172,6 +175,7 @@ async def get_messages(
             conversation_id=m.conversation_id,
             role=m.role,
             content=m.content,
+            trace_data=m.trace_data,
             created_at=m.created_at,
         )
         for m in messages
@@ -237,6 +241,10 @@ async def _token_generator(
     max_tokens: int = 2048,
 ) -> AsyncGenerator[str, None]:
     full_content = ""
+    tracer = TraceEmitter()
+    run_event = tracer.start_run(name="chat_turn")
+    yield f"data: {json.dumps({'type': 'trace_event', 'event': dataclasses.asdict(run_event)})}\n\n"
+
     try:
         # Prepend system prompt if set
         openai_messages = list(messages)
@@ -260,11 +268,18 @@ async def _token_generator(
                 full_content += text
                 yield f"data: {json.dumps({'type': 'token', 'delta': text})}\n\n"
 
-        # After stream completes, persist assistant message
+        # Emit trace events for token generation and run completion
+        token_event = tracer.emit_token_generation(token_count=len(full_content))
+        yield f"data: {json.dumps({'type': 'trace_event', 'event': dataclasses.asdict(token_event)})}\n\n"
+        end_event = tracer.end_run(success=True)
+        yield f"data: {json.dumps({'type': 'trace_event', 'event': dataclasses.asdict(end_event)})}\n\n"
+
+        # After stream completes, persist assistant message with trace data
         assistant_msg = Message(
             conversation_id=conversation_id,
             role="assistant",
             content=full_content,
+            trace_data=tracer.to_json(),
         )
         session.add(assistant_msg)
         await session.execute(
@@ -277,11 +292,13 @@ async def _token_generator(
         yield f"data: {json.dumps({'type': 'done', 'message_id': assistant_msg.id})}\n\n"
     except (asyncio.CancelledError, GeneratorExit):
         # Client disconnected -- save partial content if any was received
+        tracer.end_run(success=False)
         if full_content:
             assistant_msg = Message(
                 conversation_id=conversation_id,
                 role="assistant",
                 content=full_content,
+                trace_data=tracer.to_json(),
             )
             session.add(assistant_msg)
             await session.execute(
@@ -293,12 +310,19 @@ async def _token_generator(
             await session.refresh(assistant_msg)
             yield f"data: {json.dumps({'type': 'stopped', 'message_id': assistant_msg.id})}\n\n"
     except Exception as e:
+        # Emit error and end trace events
+        error_event = tracer.emit_error(str(e))
+        yield f"data: {json.dumps({'type': 'trace_event', 'event': dataclasses.asdict(error_event)})}\n\n"
+        end_event = tracer.end_run(success=False)
+        yield f"data: {json.dumps({'type': 'trace_event', 'event': dataclasses.asdict(end_event)})}\n\n"
+
         # Save partial content on error too
         if full_content:
             assistant_msg = Message(
                 conversation_id=conversation_id,
                 role="assistant",
                 content=full_content,
+                trace_data=tracer.to_json(),
             )
             session.add(assistant_msg)
             await session.execute(
@@ -466,6 +490,7 @@ async def export_conversation(
             {
                 "role": m.role,
                 "content": m.content,
+                "trace_data": json.loads(m.trace_data) if m.trace_data else None,
                 "created_at": m.created_at.isoformat(),
             }
             for m in messages
