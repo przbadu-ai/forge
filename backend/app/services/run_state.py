@@ -51,9 +51,7 @@ class RunStateStore:
         """Get a RunState by run_id, or None if not found."""
         return self._states.get(run_id)
 
-    def update_status(
-        self, run_id: str, status: RunStatus, error: str | None = None
-    ) -> None:
+    def update_status(self, run_id: str, status: RunStatus, error: str | None = None) -> None:
         """Update the status (and optionally error) of a run."""
         state = self._states.get(run_id)
         if state is None:

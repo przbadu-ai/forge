@@ -167,9 +167,7 @@ class Orchestrator:
                             )
                         except TimeoutError:
                             error_msg = f"Timeout after {self.timeout}s on tool: {tool_name}"
-                            end_event = self.tracer.emit_tool_end(
-                                tool_name, None, error=error_msg
-                            )
+                            end_event = self.tracer.emit_tool_end(tool_name, None, error=error_msg)
                             yield self._sse(
                                 {"type": "trace_event", "event": dataclasses.asdict(end_event)}
                             )
@@ -177,16 +175,12 @@ class Orchestrator:
                             yield self._sse(
                                 {"type": "trace_event", "event": dataclasses.asdict(error_trace)}
                             )
-                            self.run_store.update_status(
-                                run_id, RunStatus.FAILED, error=error_msg
-                            )
+                            self.run_store.update_status(run_id, RunStatus.FAILED, error=error_msg)
                             yield self._sse({"type": "error", "message": error_msg})
                             return
                         except KeyError:
                             error_msg = f"No executor registered for tool: {tool_name}"
-                            end_event = self.tracer.emit_tool_end(
-                                tool_name, None, error=error_msg
-                            )
+                            end_event = self.tracer.emit_tool_end(tool_name, None, error=error_msg)
                             yield self._sse(
                                 {"type": "trace_event", "event": dataclasses.asdict(end_event)}
                             )
@@ -219,9 +213,11 @@ class Orchestrator:
                             {
                                 "role": "tool",
                                 "tool_call_id": tc.id,
-                                "content": json.dumps(tool_output)
-                                if not isinstance(tool_output, str)
-                                else tool_output,
+                                "content": (
+                                    json.dumps(tool_output)
+                                    if not isinstance(tool_output, str)
+                                    else tool_output
+                                ),
                             }
                         )
 
@@ -250,16 +246,12 @@ class Orchestrator:
             error_msg = "max_iterations_exceeded"
             self.run_store.update_status(run_id, RunStatus.FAILED, error=error_msg)
             error_event = self.tracer.emit_error(error_msg)
-            yield self._sse(
-                {"type": "trace_event", "event": dataclasses.asdict(error_event)}
-            )
+            yield self._sse({"type": "trace_event", "event": dataclasses.asdict(error_event)})
             yield self._sse({"type": "error", "message": error_msg})
 
         except Exception as e:
             error_msg = str(e)
             error_event = self.tracer.emit_error(error_msg)
-            yield self._sse(
-                {"type": "trace_event", "event": dataclasses.asdict(error_event)}
-            )
+            yield self._sse({"type": "trace_event", "event": dataclasses.asdict(error_event)})
             self.run_store.update_status(run_id, RunStatus.FAILED, error=error_msg)
             yield self._sse({"type": "error", "message": error_msg})

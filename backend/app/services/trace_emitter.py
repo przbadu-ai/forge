@@ -102,9 +102,7 @@ class TraceEmitter:
         self._events.append(event)
         return event
 
-    def emit_tool_end(
-        self, tool_name: str, output: Any, error: str | None = None
-    ) -> TraceEvent:
+    def emit_tool_end(self, tool_name: str, output: Any, error: str | None = None) -> TraceEvent:
         """Create and append a tool_call completion event."""
         now = self._now()
         event = TraceEvent(

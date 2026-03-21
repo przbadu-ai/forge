@@ -55,9 +55,7 @@ async def _create_conversation(
     auth_client: AsyncClient,
     title: str = "TraceTest",
 ) -> dict[str, Any]:
-    resp = await auth_client.post(
-        f"{CHAT_BASE}/conversations", json={"title": title}
-    )
+    resp = await auth_client.post(f"{CHAT_BASE}/conversations", json={"title": title})
     assert resp.status_code == 201, resp.text
     return resp.json()  # type: ignore[no-any-return]
 
@@ -100,9 +98,7 @@ def _parse_sse_events(body: str) -> list[dict[str, Any]]:
 
 
 @pytest.mark.asyncio
-async def test_stream_emits_trace_events(
-    auth_client: AsyncClient, provider: LLMProvider
-) -> None:
+async def test_stream_emits_trace_events(auth_client: AsyncClient, provider: LLMProvider) -> None:
     """POST to stream endpoint emits trace_event SSE lines."""
     conv = await _create_conversation(auth_client)
     conv_id = conv["id"]
@@ -114,9 +110,7 @@ async def test_stream_emits_trace_events(
     ]
 
     mock_client = AsyncMock()
-    mock_client.chat.completions.create = AsyncMock(
-        return_value=_mock_stream_iter(chunks)
-    )
+    mock_client.chat.completions.create = AsyncMock(return_value=_mock_stream_iter(chunks))
 
     with patch("app.api.v1.chat.AsyncOpenAI", return_value=mock_client):
         resp = await auth_client.post(
@@ -145,9 +139,7 @@ async def test_trace_event_has_correct_shape(
     ]
 
     mock_client = AsyncMock()
-    mock_client.chat.completions.create = AsyncMock(
-        return_value=_mock_stream_iter(chunks)
-    )
+    mock_client.chat.completions.create = AsyncMock(return_value=_mock_stream_iter(chunks))
 
     with patch("app.api.v1.chat.AsyncOpenAI", return_value=mock_client):
         resp = await auth_client.post(
@@ -185,9 +177,7 @@ async def test_trace_data_persisted_on_message(
     ]
 
     mock_client = AsyncMock()
-    mock_client.chat.completions.create = AsyncMock(
-        return_value=_mock_stream_iter(chunks)
-    )
+    mock_client.chat.completions.create = AsyncMock(return_value=_mock_stream_iter(chunks))
 
     with patch("app.api.v1.chat.AsyncOpenAI", return_value=mock_client):
         resp = await auth_client.post(
@@ -203,9 +193,7 @@ async def test_trace_data_persisted_on_message(
     assert len(done_events) == 1, f"Expected done event, got: {events}"
 
     # Now GET messages and check trace_data
-    msg_resp = await auth_client.get(
-        f"{CHAT_BASE}/conversations/{conv_id}/messages"
-    )
+    msg_resp = await auth_client.get(f"{CHAT_BASE}/conversations/{conv_id}/messages")
     assert msg_resp.status_code == 200
     messages = msg_resp.json()
 
@@ -235,23 +223,23 @@ async def test_get_messages_includes_trace_data(
             conversation_id=conv_id,
             role="assistant",
             content="Test response",
-            trace_data=json.dumps([
-                {
-                    "id": "evt-1",
-                    "type": "run_start",
-                    "name": "chat_turn",
-                    "status": "running",
-                    "started_at": "2026-03-21T10:00:00Z",
-                    "completed_at": None,
-                }
-            ]),
+            trace_data=json.dumps(
+                [
+                    {
+                        "id": "evt-1",
+                        "type": "run_start",
+                        "name": "chat_turn",
+                        "status": "running",
+                        "started_at": "2026-03-21T10:00:00Z",
+                        "completed_at": None,
+                    }
+                ]
+            ),
         )
         session.add(msg)
         await session.commit()
 
-    resp = await auth_client.get(
-        f"{CHAT_BASE}/conversations/{conv_id}/messages"
-    )
+    resp = await auth_client.get(f"{CHAT_BASE}/conversations/{conv_id}/messages")
     assert resp.status_code == 200
     messages = resp.json()
     assert len(messages) == 1
@@ -279,9 +267,7 @@ async def test_trace_data_null_for_user_messages(
         session.add(msg)
         await session.commit()
 
-    resp = await auth_client.get(
-        f"{CHAT_BASE}/conversations/{conv_id}/messages"
-    )
+    resp = await auth_client.get(f"{CHAT_BASE}/conversations/{conv_id}/messages")
     assert resp.status_code == 200
     messages = resp.json()
     assert len(messages) == 1
@@ -297,9 +283,7 @@ async def test_error_produces_error_trace_event(
     conv_id = conv["id"]
 
     mock_client = AsyncMock()
-    mock_client.chat.completions.create = AsyncMock(
-        side_effect=Exception("Connection refused")
-    )
+    mock_client.chat.completions.create = AsyncMock(side_effect=Exception("Connection refused"))
 
     with patch("app.api.v1.chat.AsyncOpenAI", return_value=mock_client):
         resp = await auth_client.post(
@@ -316,38 +300,39 @@ async def test_error_produces_error_trace_event(
 
     # Find the error trace event
     error_traces = [
-        e for e in trace_events
+        e
+        for e in trace_events
         if e["event"].get("type") == "error" or e["event"].get("status") == "error"
     ]
     assert len(error_traces) >= 1, f"Expected error trace, got: {trace_events}"
 
 
 @pytest.mark.asyncio
-async def test_trace_data_in_export(
-    auth_client: AsyncClient, provider: LLMProvider
-) -> None:
+async def test_trace_data_in_export(auth_client: AsyncClient, provider: LLMProvider) -> None:
     """GET /conversations/{id}/export includes traces for assistant messages."""
     conv = await _create_conversation(auth_client)
     conv_id = conv["id"]
 
-    trace_json = json.dumps([
-        {
-            "id": "evt-1",
-            "type": "run_start",
-            "name": "chat_turn",
-            "status": "running",
-            "started_at": "2026-03-21T10:00:00Z",
-            "completed_at": None,
-        },
-        {
-            "id": "evt-2",
-            "type": "run_end",
-            "name": "run_end",
-            "status": "completed",
-            "started_at": "2026-03-21T10:00:01Z",
-            "completed_at": "2026-03-21T10:00:01Z",
-        },
-    ])
+    trace_json = json.dumps(
+        [
+            {
+                "id": "evt-1",
+                "type": "run_start",
+                "name": "chat_turn",
+                "status": "running",
+                "started_at": "2026-03-21T10:00:00Z",
+                "completed_at": None,
+            },
+            {
+                "id": "evt-2",
+                "type": "run_end",
+                "name": "run_end",
+                "status": "completed",
+                "started_at": "2026-03-21T10:00:01Z",
+                "completed_at": "2026-03-21T10:00:01Z",
+            },
+        ]
+    )
 
     async with AsyncSessionFactory() as session:
         msg = Message(
@@ -359,9 +344,7 @@ async def test_trace_data_in_export(
         session.add(msg)
         await session.commit()
 
-    resp = await auth_client.get(
-        f"{CHAT_BASE}/conversations/{conv_id}/export"
-    )
+    resp = await auth_client.get(f"{CHAT_BASE}/conversations/{conv_id}/export")
     assert resp.status_code == 200
     export_data = resp.json()
     assert "messages" in export_data
