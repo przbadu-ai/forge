@@ -1,9 +1,11 @@
-import { render, screen } from "@testing-library/react";
+import { render } from "@testing-library/react";
 import { describe, it, expect, vi } from "vitest";
+
+const mockReplace = vi.fn();
 
 // Mock next/navigation
 vi.mock("next/navigation", () => ({
-  useRouter: () => ({ push: vi.fn(), replace: vi.fn() }),
+  useRouter: () => ({ push: vi.fn(), replace: mockReplace }),
   useSearchParams: () => new URLSearchParams(),
 }));
 
@@ -21,20 +23,8 @@ vi.mock("@/context/auth-context", () => ({
 import HomePage from "../app/(protected)/page";
 
 describe("Home page", () => {
-  it("renders the Forge heading", () => {
+  it("redirects to /chat", () => {
     render(<HomePage />);
-    expect(screen.getByRole("heading", { name: /forge/i })).toBeInTheDocument();
-  });
-
-  it("shows the signed-in username", () => {
-    render(<HomePage />);
-    expect(screen.getByText(/signed in as admin/i)).toBeInTheDocument();
-  });
-
-  it("renders a sign out button", () => {
-    render(<HomePage />);
-    expect(
-      screen.getByRole("button", { name: /sign out/i })
-    ).toBeInTheDocument();
+    expect(mockReplace).toHaveBeenCalledWith("/chat");
   });
 });
