@@ -13,7 +13,7 @@ Forge is built in eleven dependency-ordered phases, each delivering a coherent s
 Decimal phases appear between their surrounding integers in numeric order.
 
 - [x] **Phase 1: Infrastructure Foundation** - Project scaffolding, async DB engine, SQLite WAL+WAL, Alembic batch migrations, dev tooling (completed 2026-03-21)
-- [ ] **Phase 2: Authentication** - Single-user login, JWT sessions, protected API routes
+- [x] **Phase 2: Authentication** - Single-user login, JWT sessions, protected API routes (completed 2026-03-21)
 - [ ] **Phase 3: LLM Provider Settings** - LLM provider/model configuration, test-connection, theme
 - [ ] **Phase 4: Core Streaming Chat** - Streaming SSE chat, conversation CRUD, markdown rendering
 - [ ] **Phase 5: Chat Completions** - System prompts, stop generation, regenerate, export, conversation search, model parameters
@@ -57,7 +57,7 @@ Plans:
 **Plans**: TBD
 
 Plans:
-- [ ] 02-01: Backend auth (pwdlib bcrypt password hash, JWT token generation/validation, auth middleware, /auth endpoints)
+- [x] 02-01: Backend auth (pwdlib bcrypt password hash, JWT token generation/validation, auth middleware, /auth endpoints)
 - [ ] 02-02: Frontend auth (login page, session storage, auth context, route protection, logout)
 - [ ] 02-03: Auth tests (pytest auth unit + integration, Playwright E2E login/logout/protected-route)
 
@@ -238,7 +238,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 →
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Infrastructure Foundation | 4/1 | Complete   | 2026-03-21 |
-| 2. Authentication | 0/3 | Not started | - |
+| 2. Authentication | 1/1 | Complete   | 2026-03-21 |
 | 3. LLM Provider Settings | 0/3 | Not started | - |
 | 4. Core Streaming Chat | 0/5 | Not started | - |
 | 5. Chat Completions | 0/4 | Not started | - |

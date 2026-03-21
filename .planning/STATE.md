@@ -2,16 +2,16 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-status: executing
-stopped_at: Phase 1 complete, starting Phase 2
-last_updated: "2026-03-21T15:30:00.000Z"
+status: planning
+stopped_at: Completed 02-01-PLAN.md (backend auth)
+last_updated: "2026-03-21T15:27:18.775Z"
 last_activity: 2026-03-21
 progress:
   total_phases: 11
-  completed_phases: 1
-  total_plans: 4
-  completed_plans: 4
-  percent: 9
+  completed_phases: 0
+  total_plans: 0
+  completed_plans: 5
+  percent: 0
 ---
 
 # Project State
@@ -26,7 +26,7 @@ See: .planning/PROJECT.md (updated 2026-03-21)
 ## Current Position
 
 Phase: 2 of 11 (Authentication)
-Plan: 0 of 3 in current phase
+Plan: 1 of 3 in current phase
 Status: Planning
 Last activity: 2026-03-21
 
@@ -56,6 +56,7 @@ Progress: [░░░░░░░░░░] 0%
 | Phase 01 P03 | 5min | 2 tasks | 27 files |
 | Phase 01 P02 | 2min | 3 tasks | 12 files |
 | Phase 01 P04 | 3min | 2 tasks | 5 files |
+| Phase 02 P01 | 6min | 2 tasks | 14 files |
 
 ## Accumulated Context
 
@@ -79,6 +80,9 @@ Recent decisions affecting current work:
 - [Phase 01]: WAL + busy_timeout=5000 + synchronous=NORMAL for safe async SQLite
 - [Phase 01]: Alembic render_as_batch=True for SQLite ALTER TABLE compatibility
 - [Phase 01]: Parallel make -j 2 for dev/test, sequential for lint/type-check readability
+- [Phase 02]: Used BcryptHasher explicitly (not PasswordHash.recommended) since argon2 not installed
+- [Phase 02]: AsyncSession.execute()+scalars() for async DB queries (not SQLModel .exec())
+- [Phase 02]: Test conftest uses lifespan_context(app) to ensure DB+seed runs before tests
 
 ### Pending Todos
 
@@ -91,6 +95,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-21T15:11:36.576Z
-Stopped at: Completed 01-04-PLAN.md (dev tooling)
+Last session: 2026-03-21T15:27:18.771Z
+Stopped at: Completed 02-01-PLAN.md (backend auth)
 Resume file: None
