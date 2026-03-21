@@ -10,8 +10,8 @@ Requirements for initial release. Each maps to roadmap phases.
 ### Authentication
 
 - [x] **AUTH-01**: User can log in with username and password
-- [ ] **AUTH-02**: User session persists across browser refresh
-- [ ] **AUTH-03**: User can log out from any page
+- [x] **AUTH-02**: User session persists across browser refresh
+- [x] **AUTH-03**: User can log out from any page
 - [x] **AUTH-04**: All API routes are protected behind authentication
 
 ### Chat
@@ -134,8 +134,8 @@ Which phases cover which requirements. Updated during roadmap creation.
 |-------------|-------|--------|
 | TEST-04 | Phase 1: Infrastructure Foundation | Complete |
 | AUTH-01 | Phase 2: Authentication | Complete |
-| AUTH-02 | Phase 2: Authentication | Pending |
-| AUTH-03 | Phase 2: Authentication | Pending |
+| AUTH-02 | Phase 2: Authentication | Complete |
+| AUTH-03 | Phase 2: Authentication | Complete |
 | AUTH-04 | Phase 2: Authentication | Complete |
 | SET-01 | Phase 3: LLM Provider Settings | Pending |
 | SET-05 | Phase 3: LLM Provider Settings | Pending |

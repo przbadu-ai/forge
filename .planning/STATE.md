@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: planning
-stopped_at: Completed 02-01-PLAN.md (backend auth)
-last_updated: "2026-03-21T15:27:18.775Z"
+stopped_at: Completed 02-02-PLAN.md (frontend auth)
+last_updated: "2026-03-21T15:32:28.820Z"
 last_activity: 2026-03-21
 progress:
   total_phases: 11
   completed_phases: 0
   total_plans: 0
-  completed_plans: 5
+  completed_plans: 6
   percent: 0
 ---
 
@@ -26,7 +26,7 @@ See: .planning/PROJECT.md (updated 2026-03-21)
 ## Current Position
 
 Phase: 2 of 11 (Authentication)
-Plan: 1 of 3 in current phase
+Plan: 2 of 3 in current phase
 Status: Planning
 Last activity: 2026-03-21
 
@@ -57,6 +57,7 @@ Progress: [░░░░░░░░░░] 0%
 | Phase 01 P02 | 2min | 3 tasks | 12 files |
 | Phase 01 P04 | 3min | 2 tasks | 5 files |
 | Phase 02 P01 | 6min | 2 tasks | 14 files |
+| Phase 02 P02 | 2min | 2 tasks | 9 files |
 
 ## Accumulated Context
 
@@ -83,6 +84,8 @@ Recent decisions affecting current work:
 - [Phase 02]: Used BcryptHasher explicitly (not PasswordHash.recommended) since argon2 not installed
 - [Phase 02]: AsyncSession.execute()+scalars() for async DB queries (not SQLModel .exec())
 - [Phase 02]: Test conftest uses lifespan_context(app) to ensure DB+seed runs before tests
+- [Phase 02]: proxy.ts (not middleware.ts) for Next.js 16 route guard
+- [Phase 02]: Access token in React state only, optimistic proxy cookie check
 
 ### Pending Todos
 
@@ -95,6 +98,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-21T15:27:18.771Z
-Stopped at: Completed 02-01-PLAN.md (backend auth)
+Last session: 2026-03-21T15:32:28.816Z
+Stopped at: Completed 02-02-PLAN.md (frontend auth)
 Resume file: None

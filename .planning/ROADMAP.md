@@ -58,7 +58,7 @@ Plans:
 
 Plans:
 - [x] 02-01: Backend auth (pwdlib bcrypt password hash, JWT token generation/validation, auth middleware, /auth endpoints)
-- [ ] 02-02: Frontend auth (login page, session storage, auth context, route protection, logout)
+- [x] 02-02: Frontend auth (login page, session storage, auth context, route protection, logout)
 - [ ] 02-03: Auth tests (pytest auth unit + integration, Playwright E2E login/logout/protected-route)
 
 ### Phase 3: LLM Provider Settings
@@ -238,7 +238,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 →
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Infrastructure Foundation | 4/1 | Complete   | 2026-03-21 |
-| 2. Authentication | 1/1 | Complete   | 2026-03-21 |
+| 2. Authentication | 2/1 | Complete   | 2026-03-21 |
 | 3. LLM Provider Settings | 0/3 | Not started | - |
 | 4. Core Streaming Chat | 0/5 | Not started | - |
 | 5. Chat Completions | 0/4 | Not started | - |
