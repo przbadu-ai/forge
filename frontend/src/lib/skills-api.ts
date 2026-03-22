@@ -14,12 +14,14 @@ export interface SkillRead {
 export interface SkillCreate {
   name: string;
   description: string;
+  content?: string;
   is_enabled?: boolean;
 }
 
 export interface SkillUpdate {
   name?: string;
   description?: string;
+  content?: string;
   is_enabled?: boolean;
 }
 

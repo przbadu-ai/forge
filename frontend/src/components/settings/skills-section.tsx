@@ -6,6 +6,16 @@ import { Loader2, Plus, Trash2, RefreshCw } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
+import {
+  Dialog,
+  DialogClose,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { useAuth } from "@/context/auth-context";
 import {
   listSkills,
@@ -86,6 +96,7 @@ export function SkillsSection() {
   const [showAddForm, setShowAddForm] = useState(false);
   const [newName, setNewName] = useState("");
   const [newDescription, setNewDescription] = useState("");
+  const [newInstructions, setNewInstructions] = useState("");
   const [syncMessage, setSyncMessage] = useState<string | null>(null);
 
   const {
@@ -113,13 +124,14 @@ export function SkillsSection() {
   });
 
   const createMutation = useMutation({
-    mutationFn: (data: { name: string; description: string }) =>
+    mutationFn: (data: { name: string; description: string; content?: string }) =>
       createSkill(token!, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["skills"] });
       setShowAddForm(false);
       setNewName("");
       setNewDescription("");
+      setNewInstructions("");
     },
   });
 
@@ -157,6 +169,7 @@ export function SkillsSection() {
     createMutation.mutate({
       name: newName.trim(),
       description: newDescription.trim(),
+      content: newInstructions.trim() || undefined,
     });
   }
 
@@ -211,57 +224,69 @@ export function SkillsSection() {
         )}
       </div>
 
-      {showAddForm && (
-        <form
-          onSubmit={(e) => void handleCreate(e)}
-          className="space-y-3 rounded-md border p-4"
-        >
-          <div className="space-y-2">
-            <Input
-              placeholder="Skill name (required)"
-              value={newName}
-              onChange={(e) => setNewName(e.target.value)}
-              aria-label="Skill name"
-              autoFocus
-            />
-            <Input
-              placeholder="Description"
-              value={newDescription}
-              onChange={(e) => setNewDescription(e.target.value)}
-              aria-label="Skill description"
-            />
-          </div>
-          <div className="flex items-center gap-2">
-            <Button
-              type="submit"
-              size="sm"
-              disabled={!newName.trim() || createMutation.isPending}
-            >
-              {createMutation.isPending ? (
-                <Loader2 className="mr-1 size-4 animate-spin" />
-              ) : null}
-              Save
-            </Button>
-            <Button
-              type="button"
-              variant="ghost"
-              size="sm"
-              onClick={() => {
-                setShowAddForm(false);
-                setNewName("");
-                setNewDescription("");
-              }}
-            >
-              Cancel
-            </Button>
+      <Dialog open={showAddForm} onOpenChange={setShowAddForm}>
+        <DialogContent className="sm:max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Write skill instructions</DialogTitle>
+          </DialogHeader>
+          <form
+            onSubmit={(e) => void handleCreate(e)}
+            className="space-y-4"
+          >
+            <div className="space-y-2">
+              <Label htmlFor="skill-name">Skill name</Label>
+              <Input
+                id="skill-name"
+                placeholder="weekly-status-report"
+                value={newName}
+                onChange={(e) => setNewName(e.target.value)}
+                autoFocus
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="skill-desc">Description</Label>
+              <Textarea
+                id="skill-desc"
+                rows={3}
+                placeholder="Generate weekly status reports from recent work. Use when asked for updates or progress summaries."
+                value={newDescription}
+                onChange={(e) => setNewDescription(e.target.value)}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="skill-instructions">Instructions</Label>
+              <Textarea
+                id="skill-instructions"
+                rows={8}
+                placeholder="Summarize my recent work in three sections: wins, blockers, and next steps. Keep the tone professional but not stiff..."
+                value={newInstructions}
+                onChange={(e) => setNewInstructions(e.target.value)}
+              />
+            </div>
             {createMutation.isError && (
-              <span className="text-destructive text-xs">
+              <p className="text-destructive text-sm">
                 {createMutation.error.message}
-              </span>
+              </p>
             )}
-          </div>
-        </form>
-      )}
+            <DialogFooter>
+              <DialogClose
+                render={<Button variant="outline" type="button" />}
+              >
+                Cancel
+              </DialogClose>
+              <Button
+                type="submit"
+                disabled={!newName.trim() || createMutation.isPending}
+              >
+                {createMutation.isPending && (
+                  <Loader2 className="mr-1 size-4 animate-spin" />
+                )}
+                Create
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
 
       {skills && skills.length > 0 ? (
         <div className="space-y-3">
