@@ -14,6 +14,7 @@ export async function createConversation(
 ): Promise<Conversation> {
   const res = await apiFetch("/api/v1/chat/conversations", token, {
     method: "POST",
+    body: JSON.stringify({}),
   });
   if (!res.ok) throw new Error("Failed to create conversation");
   return res.json() as Promise<Conversation>;
