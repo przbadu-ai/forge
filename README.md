@@ -15,34 +15,38 @@ Forge connects to any OpenAI-compatible LLM endpoint (Ollama, LM Studio, vLLM, o
 
 ## Prerequisites
 
-- Node.js 18+
-- npm
-- Python 3.11+
-- [uv](https://docs.astral.sh/uv/) (Python package manager)
-  ```bash
-  curl -LsSf https://astral.sh/uv/install.sh | sh
-  # or
-  pip install uv
-  ```
+- **Node.js 22+** and npm
+- **Python 3.12+**
+- **uv** (installed automatically by `make setup` if missing)
 
 ## Setup
 
-### Backend
+One command installs everything:
 
 ```bash
-cd backend
-uv sync
-cp .env.example .env   # edit with your LLM endpoint + secret key
-uv run alembic upgrade head
+make setup
 ```
 
-### Frontend
+This will:
+1. Check that Node.js is installed (fails with install instructions if missing)
+2. Install `uv` if not already present
+3. Install backend Python dependencies (`uv sync`)
+4. Install frontend Node dependencies (`npm ci`)
+5. Create `.env` from `.env.example` if it doesn't exist
+6. Run database migrations (`alembic upgrade head`)
+
+Then edit `.env` with your LLM endpoint and secret key.
+
+## Network Access
+
+Both servers bind to `0.0.0.0` by default, so you can access Forge from other devices on your network. Find your local IP and add it to `CORS_ORIGINS` in `.env`:
 
 ```bash
-cd frontend
-npm install
-cp .env.local.example .env.local   # set NEXT_PUBLIC_API_URL=http://localhost:8000
+# .env
+CORS_ORIGINS=["http://localhost:3000","http://192.168.1.100:3000"]
 ```
+
+Then access `http://<your-ip>:3000` from any device on the same network.
 
 ## Running
 
@@ -77,3 +81,4 @@ make frontend-test    # vitest
 | `make migrate`           | Run Alembic migrations (upgrade head)        |
 | `make migrate-down`      | Roll back one Alembic migration              |
 | `make build`             | Production build of the frontend             |
+| `make setup`             | Full project setup (deps, env, migrations)   |

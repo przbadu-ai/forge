@@ -1,15 +1,55 @@
-.PHONY: dev backend-dev frontend-dev \
+.PHONY: setup backend-setup frontend-setup \
+        dev backend-dev frontend-dev \
         test backend-test frontend-test \
         lint backend-lint frontend-lint \
         type-check backend-type-check frontend-type-check \
         format migrate build
+
+# ── Setup ─────────────────────────────────────────────────
+setup: check-node install-uv backend-setup frontend-setup setup-env migrate
+	@echo ""
+	@echo "✓ Setup complete. Run 'make dev' to start."
+
+check-node:
+	@command -v node >/dev/null 2>&1 || { \
+		echo "Error: Node.js is not installed."; \
+		echo ""; \
+		echo "Install it from: https://nodejs.org/ (LTS recommended)"; \
+		echo "  macOS:   brew install node"; \
+		echo "  Ubuntu:  curl -fsSL https://deb.nodesource.com/setup_22.x | sudo -E bash - && sudo apt-get install -y nodejs"; \
+		echo "  Or use nvm: https://github.com/nvm-sh/nvm"; \
+		exit 1; \
+	}
+
+install-uv:
+	@command -v uv >/dev/null 2>&1 || { \
+		echo "uv not found. Installing..."; \
+		curl -LsSf https://astral.sh/uv/install.sh | sh; \
+	}
+	@echo "✓ uv is installed"
+
+backend-setup:
+	cd backend && uv sync --all-extras
+	@echo "✓ Backend dependencies installed"
+
+frontend-setup:
+	cd frontend && npm ci
+	@echo "✓ Frontend dependencies installed"
+
+setup-env:
+	@if [ ! -f .env ]; then \
+		cp .env.example .env; \
+		echo "✓ Created .env from .env.example"; \
+	else \
+		echo "✓ .env already exists"; \
+	fi
 
 # ── Development ────────────────────────────────────────────
 dev:
 	make -j 2 backend-dev frontend-dev
 
 backend-dev:
-	cd backend && uv run uvicorn app.main:app --reload --port 8000
+	cd backend && uv run uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 
 frontend-dev:
 	cd frontend && npm run dev
