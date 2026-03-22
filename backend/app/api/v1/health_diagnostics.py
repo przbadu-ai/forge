@@ -10,6 +10,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.v1.deps import get_current_user
+from app.core.chroma_client import get_chroma_client
 from app.core.database import get_session
 from app.core.encryption import decrypt_value
 from app.models.llm_provider import LLMProvider
@@ -115,25 +116,17 @@ async def _check_reranker(settings: AppSettings) -> ServiceStatus:
 
 
 async def _check_chromadb() -> ServiceStatus:
-    """Check ChromaDB connectivity."""
+    """Check ChromaDB connectivity via in-process client."""
     try:
-        import httpx
-
+        client = get_chroma_client()
         start = time.perf_counter()
-        async with httpx.AsyncClient(timeout=5) as client:
-            resp = await client.get("http://localhost:8100/api/v1/heartbeat")
-            latency = int((time.perf_counter() - start) * 1000)
-            if resp.status_code == 200:
-                return ServiceStatus(
-                    name="ChromaDB",
-                    status="ok",
-                    latency_ms=latency,
-                )
-            return ServiceStatus(
-                name="ChromaDB",
-                status="error",
-                error=f"HTTP {resp.status_code}",
-            )
+        client.heartbeat()  # Returns nanosecond timestamp; confirms client is alive
+        latency = int((time.perf_counter() - start) * 1000)
+        return ServiceStatus(
+            name="ChromaDB",
+            status="ok",
+            latency_ms=latency,
+        )
     except Exception as exc:
         return ServiceStatus(
             name="ChromaDB",
