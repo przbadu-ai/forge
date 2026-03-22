@@ -1,9 +1,10 @@
 from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
 from sqlmodel import select
+from starlette.middleware.base import BaseHTTPMiddleware
 
 from app.api.v1.router import api_router
 from app.core.config import settings
@@ -68,8 +69,24 @@ def create_app() -> FastAPI:
         title=settings.app_name,
         version="0.1.0",
         lifespan=lifespan,
-        redirect_slashes=False,
     )
+
+    # Fix redirect URLs when behind a reverse proxy (e.g., Next.js rewrites).
+    # FastAPI's trailing-slash redirects use the internal Host header (backend:8000),
+    # which leaks to the browser and causes mixed-content errors on HTTPS.
+    class FixRedirectMiddleware(BaseHTTPMiddleware):
+        async def dispatch(self, request: Request, call_next):  # type: ignore[override]
+            response = await call_next(request)
+            if response.status_code in (307, 308):
+                location = response.headers.get("location", "")
+                if "backend:8000" in location:
+                    # Strip the internal origin — return a relative redirect
+                    response.headers["location"] = location.replace(
+                        "http://backend:8000", ""
+                    )
+            return response
+
+    application.add_middleware(FixRedirectMiddleware)
 
     application.add_middleware(
         CORSMiddleware,
