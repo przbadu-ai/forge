@@ -12,7 +12,7 @@ export default function ChatLayout({
   const activeId = params.id ? Number(params.id) : undefined;
 
   return (
-    <div className="flex h-screen overflow-hidden">
+    <div className="flex h-full overflow-hidden">
       {/* Sidebar */}
       <aside className="w-64 shrink-0 border-r bg-muted/30">
         <ConversationList activeId={activeId} />

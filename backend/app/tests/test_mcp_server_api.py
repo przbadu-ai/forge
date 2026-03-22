@@ -31,21 +31,25 @@ async def _create_server(
     auth_client: AsyncClient,
     *,
     name: str = "test-server",
-    command: str = "echo",
+    transport_type: str = "stdio",
+    command: str | None = "echo",
+    url: str | None = None,
     args: list[str] | None = None,
     env_vars: dict[str, str] | None = None,
     is_enabled: bool = True,
 ) -> dict[str, Any]:
-    resp = await auth_client.post(
-        MCP_URL,
-        json={
-            "name": name,
-            "command": command,
-            "args": args or [],
-            "env_vars": env_vars or {},
-            "is_enabled": is_enabled,
-        },
-    )
+    payload: dict[str, Any] = {
+        "name": name,
+        "transport_type": transport_type,
+        "args": args or [],
+        "env_vars": env_vars or {},
+        "is_enabled": is_enabled,
+    }
+    if command is not None:
+        payload["command"] = command
+    if url is not None:
+        payload["url"] = url
+    resp = await auth_client.post(MCP_URL, json=payload)
     assert resp.status_code == 201, resp.text
     return resp.json()  # type: ignore[no-any-return]
 
@@ -59,19 +63,84 @@ async def test_mcp_servers_requires_auth(client: AsyncClient) -> None:
     assert resp.status_code in (401, 403)
 
 
-# ---------- 2. Create ----------
+# ---------- 2. Create (stdio) ----------
 
 
-async def test_create_mcp_server(auth_client: AsyncClient) -> None:
-    """POST with valid data returns 201 and the created server."""
-    data = await _create_server(auth_client, name="my-server", command="uvx")
+async def test_create_mcp_server_stdio(auth_client: AsyncClient) -> None:
+    """POST with valid stdio data returns 201 and the created server."""
+    data = await _create_server(auth_client, name="my-server", transport_type="stdio", command="uvx")
     assert data["name"] == "my-server"
+    assert data["transport_type"] == "stdio"
     assert data["command"] == "uvx"
+    assert data["url"] is None
     assert data["args"] == []
     assert data["env_vars"] == {}
     assert data["is_enabled"] is True
     assert "id" in data
     assert "created_at" in data
+
+
+# ---------- 2b. Create (SSE) ----------
+
+
+async def test_create_mcp_server_sse(auth_client: AsyncClient) -> None:
+    """POST with SSE transport and URL returns 201."""
+    data = await _create_server(
+        auth_client,
+        name="sse-server",
+        transport_type="sse",
+        command=None,
+        url="http://localhost:8080/sse",
+    )
+    assert data["name"] == "sse-server"
+    assert data["transport_type"] == "sse"
+    assert data["url"] == "http://localhost:8080/sse"
+    assert data["command"] is None
+
+
+# ---------- 2c. Create SSE without URL returns 422 ----------
+
+
+async def test_create_sse_server_without_url_returns_422(auth_client: AsyncClient) -> None:
+    """POST with SSE transport but no URL returns 422."""
+    resp = await auth_client.post(
+        MCP_URL,
+        json={
+            "name": "bad-sse",
+            "transport_type": "sse",
+        },
+    )
+    assert resp.status_code == 422
+
+
+# ---------- 2d. Create stdio without command returns 422 ----------
+
+
+async def test_create_stdio_server_without_command_returns_422(auth_client: AsyncClient) -> None:
+    """POST with stdio transport but no command returns 422."""
+    resp = await auth_client.post(
+        MCP_URL,
+        json={
+            "name": "bad-stdio",
+            "transport_type": "stdio",
+        },
+    )
+    assert resp.status_code == 422
+
+
+# ---------- 2e. Read includes transport fields ----------
+
+
+async def test_read_server_includes_transport_fields(auth_client: AsyncClient) -> None:
+    """GET returns transport_type and url fields."""
+    created = await _create_server(auth_client, name="read-test", command="echo")
+    resp = await auth_client.get(MCP_URL)
+    assert resp.status_code == 200
+    servers = resp.json()
+    server = next(s for s in servers if s["id"] == created["id"])
+    assert "transport_type" in server
+    assert server["transport_type"] == "stdio"
+    assert "url" in server
 
 
 # ---------- 3. List ----------

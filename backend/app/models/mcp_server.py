@@ -16,7 +16,9 @@ class McpServer(SQLModel, table=True):
 
     id: int | None = Field(default=None, primary_key=True)
     name: str = Field(unique=True, index=True, max_length=100)
-    command: str = Field(max_length=500)  # e.g. "uvx" or "/usr/local/bin/mcp-server"
+    transport_type: str = Field(default="stdio", max_length=20)  # "stdio", "sse", "streamable_http"
+    command: str | None = Field(default=None, max_length=500)  # required for stdio
+    url: str | None = Field(default=None, max_length=500)  # required for sse and streamable_http
     args: str = Field(default="[]")  # JSON array: ["--flag", "value"]
     env_vars: str = Field(default="{}")  # JSON object: {"KEY": "VALUE"}
     is_enabled: bool = Field(default=True)

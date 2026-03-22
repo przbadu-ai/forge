@@ -66,10 +66,21 @@ export function McpServerCard({
     );
   }
 
-  const argsPreview = server.args.length > 0 ? server.args.join(" ") : "";
-  const commandPreview = argsPreview
-    ? `${server.command} ${argsPreview}`
-    : server.command;
+  const transportLabel =
+    server.transport_type === "sse"
+      ? "SSE"
+      : server.transport_type === "streamable_http"
+        ? "HTTP"
+        : "stdio";
+
+  const isRemote =
+    server.transport_type === "sse" || server.transport_type === "streamable_http";
+
+  const commandPreview = isRemote
+    ? server.url ?? ""
+    : server.args.length > 0
+      ? `${server.command ?? ""} ${server.args.join(" ")}`
+      : server.command ?? "";
 
   return (
     <Card>
@@ -79,6 +90,7 @@ export function McpServerCard({
           <Badge variant={server.is_enabled ? "secondary" : "outline"}>
             {server.is_enabled ? "Enabled" : "Disabled"}
           </Badge>
+          <Badge variant="outline">{transportLabel}</Badge>
         </CardTitle>
         <CardAction>
           <div className="flex items-center gap-1">

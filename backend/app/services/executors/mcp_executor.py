@@ -1,12 +1,16 @@
-"""McpExecutor — BaseExecutor implementation backed by an MCP server subprocess."""
+"""McpExecutor — BaseExecutor implementation backed by an MCP server (stdio, SSE, or streamable HTTP)."""
 
 import asyncio
 import json
 import logging
+from collections.abc import AsyncIterator
+from contextlib import asynccontextmanager
 from typing import Any
 
 from mcp import ClientSession
+from mcp.client.sse import sse_client
 from mcp.client.stdio import StdioServerParameters, stdio_client
+from mcp.client.streamable_http import streamablehttp_client
 
 from app.models.mcp_server import McpServer
 from app.services.executors.base import ExecutorResult
@@ -16,8 +20,51 @@ from app.services.trace_emitter import TraceEmitter
 logger = logging.getLogger(__name__)
 
 
+@asynccontextmanager
+async def _connect_session(server: McpServer, timeout: float) -> AsyncIterator[ClientSession]:
+    """Yield a connected ClientSession for any transport type.
+
+    Supports stdio, sse, and streamable_http transports.
+    """
+    transport_type = server.transport_type or "stdio"
+    env_vars: dict[str, str] = json.loads(server.env_vars)
+
+    if transport_type == "stdio":
+        args_list: list[str] = json.loads(server.args)
+        params = StdioServerParameters(
+            command=server.command or "",
+            args=args_list,
+            env=env_vars if env_vars else None,
+        )
+        async with (
+            stdio_client(params) as (read, write),
+            ClientSession(read, write) as session,
+        ):
+            await asyncio.wait_for(session.initialize(), timeout=timeout)
+            yield session
+
+    elif transport_type == "sse":
+        async with (
+            sse_client(url=server.url or "") as (read, write),
+            ClientSession(read, write) as session,
+        ):
+            await asyncio.wait_for(session.initialize(), timeout=timeout)
+            yield session
+
+    elif transport_type == "streamable_http":
+        async with (
+            streamablehttp_client(url=server.url or "") as (read, write, _),
+            ClientSession(read, write) as session,
+        ):
+            await asyncio.wait_for(session.initialize(), timeout=timeout)
+            yield session
+
+    else:
+        raise ValueError(f"Unsupported transport type: {transport_type}")
+
+
 class McpExecutor:
-    """Executes a named MCP tool on a specific MCP server subprocess.
+    """Executes a named MCP tool on a specific MCP server.
 
     One McpExecutor instance per MCP server. Registered in ExecutorRegistry
     for each tool name as "{server_name}.{tool_name}".
@@ -40,22 +87,10 @@ class McpExecutor:
         # Extract the bare tool_name (strip server prefix)
         tool_name = name.split(".", 1)[-1] if "." in name else name
 
-        args_list: list[str] = json.loads(self.server.args)
-        env_vars: dict[str, str] = json.loads(self.server.env_vars)
-
         self.tracer.emit_tool_start(name, input)
 
         try:
-            params = StdioServerParameters(
-                command=self.server.command,
-                args=args_list,
-                env=env_vars if env_vars else None,
-            )
-            async with (
-                stdio_client(params) as (read, write),
-                ClientSession(read, write) as session,
-            ):
-                await asyncio.wait_for(session.initialize(), timeout=self.timeout)
+            async with _connect_session(self.server, self.timeout) as session:
                 result = await asyncio.wait_for(
                     session.call_tool(tool_name, arguments=input),
                     timeout=self.timeout,
@@ -101,18 +136,7 @@ async def discover_and_register_mcp_tools(
         if not server.is_enabled:
             continue
         try:
-            args_list: list[str] = json.loads(server.args)
-            env_vars: dict[str, str] = json.loads(server.env_vars)
-            params = StdioServerParameters(
-                command=server.command,
-                args=args_list,
-                env=env_vars if env_vars else None,
-            )
-            async with (
-                stdio_client(params) as (read, write),
-                ClientSession(read, write) as session,
-            ):
-                await asyncio.wait_for(session.initialize(), timeout=timeout)
+            async with _connect_session(server, timeout) as session:
                 tools_result = await asyncio.wait_for(session.list_tools(), timeout=timeout)
 
             executor = McpExecutor(

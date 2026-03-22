@@ -64,6 +64,8 @@ const SAMPLE_SERVERS: McpServerRead[] = [
     args: ["mcp-server-filesystem", "/home/user"],
     env_vars: {},
     is_enabled: true,
+    transport_type: "stdio",
+    url: null,
     created_at: "2026-01-01T00:00:00Z",
   },
   {
@@ -73,6 +75,8 @@ const SAMPLE_SERVERS: McpServerRead[] = [
     args: ["dist/index.js"],
     env_vars: { GITHUB_TOKEN: "ghp_xxx" },
     is_enabled: false,
+    transport_type: "stdio",
+    url: null,
     created_at: "2026-01-02T00:00:00Z",
   },
 ];
@@ -115,6 +119,31 @@ describe("McpServersSection", () => {
     expect(screen.getByText("Disabled")).toBeInTheDocument();
   });
 
+  it("shows transport type badge on server cards", async () => {
+    const serversWithTypes: McpServerRead[] = [
+      { ...SAMPLE_SERVERS[0], transport_type: "stdio" },
+      {
+        id: 3,
+        name: "remote-sse",
+        command: null,
+        args: [],
+        env_vars: {},
+        is_enabled: true,
+        transport_type: "sse",
+        url: "http://localhost:8080/sse",
+        created_at: "2026-01-03T00:00:00Z",
+      },
+    ];
+    mockListMcpServers.mockResolvedValue(serversWithTypes);
+    render(<McpServersSection />, { wrapper: createWrapper() });
+
+    await waitFor(() => {
+      expect(screen.getByText("filesystem")).toBeInTheDocument();
+    });
+    expect(screen.getByText("stdio")).toBeInTheDocument();
+    expect(screen.getByText("SSE")).toBeInTheDocument();
+  });
+
   it("shows add form on Add MCP Server button click", async () => {
     mockListMcpServers.mockResolvedValue([]);
     const user = userEvent.setup();
@@ -131,6 +160,36 @@ describe("McpServersSection", () => {
         screen.getByText(/add mcp server/i, { selector: "[data-slot='card-title']" })
       ).toBeInTheDocument();
     });
+  });
+
+  it("shows URL field when transport type is sse", async () => {
+    mockListMcpServers.mockResolvedValue([]);
+    const user = userEvent.setup();
+    render(<McpServersSection />, { wrapper: createWrapper() });
+
+    await waitFor(() => {
+      expect(screen.getByText(/no mcp servers yet/i)).toBeInTheDocument();
+    });
+
+    await user.click(screen.getByRole("button", { name: /add mcp server/i }));
+
+    await waitFor(() => {
+      expect(
+        screen.getByText(/add mcp server/i, { selector: "[data-slot='card-title']" })
+      ).toBeInTheDocument();
+    });
+
+    // Initially should show Command field (stdio is default)
+    expect(screen.getByLabelText(/command/i)).toBeInTheDocument();
+
+    // Click SSE transport type
+    await user.click(screen.getByRole("radio", { name: /sse/i }));
+
+    // URL field should appear, Command should be hidden
+    await waitFor(() => {
+      expect(screen.getByLabelText(/server url/i)).toBeInTheDocument();
+    });
+    expect(screen.queryByLabelText(/command/i)).not.toBeInTheDocument();
   });
 
   it("renders toggle switches for each server", async () => {

@@ -15,13 +15,17 @@ from app.models.mcp_server import McpServer
 
 router = APIRouter(dependencies=[Depends(get_current_user)])
 
+VALID_TRANSPORT_TYPES = {"stdio", "sse", "streamable_http"}
+
 
 # ---------- Schemas ----------
 
 
 class McpServerCreate(BaseModel):
     name: str
-    command: str
+    transport_type: str = "stdio"
+    command: str | None = None
+    url: str | None = None
     args: list[str] = []
     env_vars: dict[str, str] = {}
     is_enabled: bool = True
@@ -29,7 +33,9 @@ class McpServerCreate(BaseModel):
 
 class McpServerUpdate(BaseModel):
     name: str | None = None
+    transport_type: str | None = None
     command: str | None = None
+    url: str | None = None
     args: list[str] | None = None
     env_vars: dict[str, str] | None = None
     is_enabled: bool | None = None
@@ -38,7 +44,9 @@ class McpServerUpdate(BaseModel):
 class McpServerRead(BaseModel):
     id: int
     name: str
-    command: str
+    transport_type: str
+    command: str | None
+    url: str | None
     args: list[str]
     env_vars: dict[str, str]
     is_enabled: bool
@@ -49,11 +57,32 @@ class McpServerRead(BaseModel):
 # ---------- Helpers ----------
 
 
+def _validate_transport_fields(transport_type: str, command: str | None, url: str | None) -> None:
+    """Validate that required fields are present for the given transport type."""
+    if transport_type not in VALID_TRANSPORT_TYPES:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+            detail=f"Invalid transport_type '{transport_type}'. Must be one of: {', '.join(sorted(VALID_TRANSPORT_TYPES))}",
+        )
+    if transport_type == "stdio" and not command:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+            detail="'command' is required for stdio transport type",
+        )
+    if transport_type in ("sse", "streamable_http") and not url:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+            detail="'url' is required for sse and streamable_http transport types",
+        )
+
+
 def _to_read(server: McpServer) -> McpServerRead:
     return McpServerRead(
         id=server.id,
         name=server.name,
+        transport_type=server.transport_type,
         command=server.command,
+        url=server.url,
         args=json.loads(server.args),
         env_vars=json.loads(server.env_vars),
         is_enabled=server.is_enabled,
@@ -89,9 +118,13 @@ async def create_mcp_server(
     data: McpServerCreate,
     session: AsyncSession = Depends(get_session),
 ) -> McpServerRead:
+    _validate_transport_fields(data.transport_type, data.command, data.url)
+
     server = McpServer(
         name=data.name,
+        transport_type=data.transport_type,
         command=data.command,
+        url=data.url,
         args=json.dumps(data.args),
         env_vars=json.dumps(data.env_vars),
         is_enabled=data.is_enabled,
@@ -119,14 +152,21 @@ async def update_mcp_server(
 
     if data.name is not None:
         server.name = data.name
+    if data.transport_type is not None:
+        server.transport_type = data.transport_type
     if data.command is not None:
         server.command = data.command
+    if data.url is not None:
+        server.url = data.url
     if data.args is not None:
         server.args = json.dumps(data.args)
     if data.env_vars is not None:
         server.env_vars = json.dumps(data.env_vars)
     if data.is_enabled is not None:
         server.is_enabled = data.is_enabled
+
+    # Validate the final state of the server
+    _validate_transport_fields(server.transport_type, server.command, server.url)
 
     server.updated_at = datetime.now(UTC)
     session.add(server)

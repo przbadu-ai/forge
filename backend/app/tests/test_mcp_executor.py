@@ -12,7 +12,9 @@ from app.services.trace_emitter import TraceEmitter
 
 def _make_server(
     name: str = "test-server",
-    command: str = "echo",
+    transport_type: str = "stdio",
+    command: str | None = "echo",
+    url: str | None = None,
     args: str = "[]",
     env_vars: str = "{}",
 ) -> McpServer:
@@ -20,7 +22,9 @@ def _make_server(
     return McpServer(
         id=1,
         name=name,
+        transport_type=transport_type,
         command=command,
+        url=url,
         args=args,
         env_vars=env_vars,
         is_enabled=True,

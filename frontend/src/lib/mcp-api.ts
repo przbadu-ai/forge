@@ -1,29 +1,37 @@
 import { apiFetch } from "@/lib/api";
 
+export type McpTransportType = "stdio" | "sse" | "streamable_http";
+
 export interface McpServerRead {
   id: number;
   name: string;
-  command: string;
+  command: string | null;
   args: string[];
   env_vars: Record<string, string>;
   is_enabled: boolean;
+  transport_type: McpTransportType;
+  url: string | null;
   created_at: string;
 }
 
 export interface McpServerCreate {
   name: string;
-  command: string;
+  command?: string | null;
   args?: string[];
   env_vars?: Record<string, string>;
   is_enabled?: boolean;
+  transport_type?: McpTransportType;
+  url?: string | null;
 }
 
 export interface McpServerUpdate {
   name?: string;
-  command?: string;
+  command?: string | null;
   args?: string[];
   env_vars?: Record<string, string>;
   is_enabled?: boolean;
+  transport_type?: McpTransportType;
+  url?: string | null;
 }
 
 async function handleResponse<T>(res: Response): Promise<T> {
