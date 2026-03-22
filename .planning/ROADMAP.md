@@ -203,15 +203,10 @@ Plans:
   4. `vitest` passes all frontend unit and component tests with no failures
   5. Playwright E2E tests pass for: auth flow, streaming chat, tool trace rendering, and settings persistence
   6. CI pipeline runs lint, type-check, unit/integration tests, E2E smoke, and build — all green
-**Plans:** 3 plans
+**Plans:** 1 plans
 
 Plans:
-- [ ] 11-01: Web search settings (SearXNG and Exa provider configuration, Settings UI)
-- [ ] 11-02: Health diagnostics panel (backend health-check endpoints for all integrations, frontend diagnostics panel)
-- [ ] 11-03: Backend test completion (pytest coverage review, missing unit/integration tests for all phases)
-- [ ] 11-04: Frontend test completion (Vitest coverage review, missing component tests)
-- [ ] 11-05: E2E test suite (Playwright: auth, streaming, trace panel, settings, export, search)
-- [ ] 11-06: CI pipeline (GitHub Actions or Makefile: lint, type-check, unit, integration, E2E smoke, build)
+- [ ] 11-01-PLAN.md — Add Playwright E2E to CI pipeline, verify full quality gate (all tests pass, lint/type-check clean)
 
 ## Progress
 
@@ -229,5 +224,5 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6 -> 7 -> 8 -> 9 -> 10
 | 7. Orchestration Loop | 2/2 | Complete | 2026-03-21 |
 | 8. MCP Integration | 1/2 | In progress | - |
 | 9. Skills Integration | 1/1 | Complete   | 2026-03-22 |
-| 10. File Upload + RAG | 1/1 | Complete   | 2026-03-22 |
-| 11. Settings Completion + Quality Gate | 0/6 | Not started | - |
+| 10. File Upload + RAG | 1/1 | Complete    | 2026-03-22 |
+| 11. Settings Completion + Quality Gate | 0/1 | Not started | - |
