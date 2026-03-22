@@ -172,12 +172,10 @@ Plans:
   1. User can view available skills in Settings and toggle each on or off
   2. A chat turn that triggers a skill shows the skill name, trigger, and output in the execution trace
   3. Skill execution metadata (skill name, input, output, status, timestamps) persists in the database linked to the message
-**Plans:** 3 plans
+**Plans:** 1 plan
 
 Plans:
-- [ ] 09-01: Skills backend (Skill model, enable/disable settings, SkillExecutor, skill trigger detection, DB persistence)
-- [ ] 09-02: Skills settings UI (skill list with enable/disable toggles)
-- [ ] 09-03: Skills tests (skill execution with mock skill, trace event emission, persistence, settings persistence)
+- [ ] 09-01-PLAN.md — Verify existing skills implementation (backend + frontend + tests already built in prior phases)
 
 ### Phase 10: File Upload + RAG
 **Goal**: Users can upload documents and receive answers with source attribution from their files
@@ -223,7 +221,7 @@ Plans:
 ## Progress
 
 **Execution Order:**
-Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 → 9 → 10 → 11
+Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6 -> 7 -> 8 -> 9 -> 10 -> 11
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
@@ -235,6 +233,6 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 →
 | 6. Execution Trace System | 3/1 | Complete   | 2026-03-21 |
 | 7. Orchestration Loop | 2/2 | Complete | 2026-03-21 |
 | 8. MCP Integration | 1/2 | In progress | - |
-| 9. Skills Integration | 0/3 | Not started | - |
+| 9. Skills Integration | 0/1 | Not started | - |
 | 10. File Upload + RAG | 0/6 | Not started | - |
 | 11. Settings Completion + Quality Gate | 0/6 | Not started | - |
