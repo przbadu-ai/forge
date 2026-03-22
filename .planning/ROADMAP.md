@@ -16,7 +16,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 2: Authentication** - Single-user login, JWT sessions, protected API routes (completed 2026-03-21)
 - [x] **Phase 3: LLM Provider Settings** - LLM provider/model configuration, test-connection, theme (completed 2026-03-21)
 - [x] **Phase 4: Core Streaming Chat** - Streaming SSE chat, conversation CRUD, markdown rendering (completed 2026-03-21)
-- [ ] **Phase 5: Chat Completions** - System prompts, stop generation, regenerate, export, conversation search, model parameters
+- [x] **Phase 5: Chat Completions** - System prompts, stop generation, regenerate, export, conversation search, model parameters (completed 2026-03-22)
 - [x] **Phase 6: Execution Trace System** - TraceEmitter, trace UI, persistence, replay on resume (completed 2026-03-21)
 - [ ] **Phase 7: Orchestration Loop** - Custom agentic loop, executor interfaces, timeout/retry, run state
 - [ ] **Phase 8: MCP Integration** - MCP server registration, process manager, tool invocation, trace visibility
@@ -107,10 +107,10 @@ Plans:
   5. User can export a conversation as a JSON file containing all messages
   6. User can search conversations by message content and see matching results
   7. User can adjust temperature and max tokens per conversation or globally
-**Plans:** 3 plans
+**Plans:** 1/1 plans complete
 
 Plans:
-- [ ] 05-01: Backend completions (system prompt global + per-conversation, model parameter storage, regenerate endpoint, conversation search)
+- [x] 05-01: Backend completions (system prompt global + per-conversation, model parameter storage, regenerate endpoint, conversation search)
 - [ ] 05-02: Frontend completions (system prompt UI in settings + per-conversation, stop button, regenerate button, model parameters)
 - [ ] 05-03: Export + search (JSON export endpoint + download trigger, full-text search endpoint + search UI)
 - [ ] 05-04: Completions tests (system prompt override, regenerate, stop/abort, export, search)
@@ -231,7 +231,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 →
 | 2. Authentication | 3/1 | Complete   | 2026-03-21 |
 | 3. LLM Provider Settings | 1/1 | Complete   | 2026-03-21 |
 | 4. Core Streaming Chat | 2/1 | Complete   | 2026-03-21 |
-| 5. Chat Completions | 0/4 | Not started | - |
+| 5. Chat Completions | 1/1 | Complete   | 2026-03-22 |
 | 6. Execution Trace System | 3/1 | Complete   | 2026-03-21 |
 | 7. Orchestration Loop | 2/2 | Complete | 2026-03-21 |
 | 8. MCP Integration | 1/2 | In progress | - |

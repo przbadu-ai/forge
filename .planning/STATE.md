@@ -2,16 +2,14 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-status: executing
-stopped_at: Completed 08-02-PLAN.md (MCP frontend)
-last_updated: "2026-03-21T17:43:00Z"
-last_activity: 2026-03-21
+status: unknown
+stopped_at: Completed 05-01-PLAN.md
+last_updated: "2026-03-22T04:12:15.020Z"
 progress:
   total_phases: 11
   completed_phases: 0
   total_plans: 0
-  completed_plans: 17
-  percent: 0
+  completed_plans: 20
 ---
 
 # Project State
@@ -21,16 +19,12 @@ progress:
 See: .planning/PROJECT.md (updated 2026-03-21)
 
 **Core value:** Every AI interaction — chat, tool call, MCP action, skill execution — is visible, persisted, and reviewable.
-**Current focus:** Phase 8 - MCP Integration
+**Current focus:** Phase 05 — chat-completions
 
 ## Current Position
 
-Phase: 8 of 11 (MCP Integration)
-Plan: 2 of 2 in current phase (complete)
-Status: Phase 8 complete
-Last activity: 2026-03-21
-
-Progress: [░░░░░░░░░░] 0%
+Phase: 05 (chat-completions) — EXECUTING
+Plan: 1 of 1
 
 ## Performance Metrics
 
@@ -70,6 +64,7 @@ Progress: [░░░░░░░░░░] 0%
 | Phase 07 P02 | 2min | 3 tasks | 3 files |
 | Phase 08 P01 | 7min | 3 tasks | 14 files |
 | Phase 08 P02 | 4min | 2 tasks | 6 files |
+| Phase 05 P01 | 2min | 4 tasks | 1 files |
 
 ## Accumulated Context
 
@@ -119,6 +114,9 @@ Recent decisions affecting current work:
 - [Phase 08]: MCP tool discovery per-chat-turn (not app startup) for fresh tool lists
 - [Phase 08]: McpExecutor uses stdio_client context manager per invocation (not persistent connection)
 - [Phase 08]: PATCH for toggle endpoint (RESTful idempotent state change)
+- [Phase 05]: System prompt prepended as role=system in LLM call, not persisted as Message row
+- [Phase 05]: Per-conversation settings override global via null-check cascade
+- [Phase 05]: AppSettings single-row upsert pattern (id=1) for global config
 
 ### Pending Todos
 
@@ -140,6 +138,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-22T03:35:00Z
-Stopped at: Completed quick task 260322-ctf (MCP JSON bulk import)
+Last session: 2026-03-22T04:12:15.017Z
+Stopped at: Completed 05-01-PLAN.md
 Resume file: None

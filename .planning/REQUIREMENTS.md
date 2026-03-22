@@ -23,11 +23,11 @@ Requirements for initial release. Each maps to roadmap phases.
 - [x] **CHAT-05**: User can resume a previous conversation
 - [x] **CHAT-06**: User can rename a conversation
 - [x] **CHAT-07**: User can delete a conversation
-- [ ] **CHAT-08**: User can set a global system prompt / custom instructions
-- [ ] **CHAT-09**: User can override system prompt per conversation
-- [ ] **CHAT-10**: User can regenerate the last assistant response on failure
-- [ ] **CHAT-11**: User can stop an in-progress generation
-- [ ] **CHAT-12**: User can search across all conversations by message content
+- [x] **CHAT-08**: User can set a global system prompt / custom instructions
+- [x] **CHAT-09**: User can override system prompt per conversation
+- [x] **CHAT-10**: User can regenerate the last assistant response on failure
+- [x] **CHAT-11**: User can stop an in-progress generation
+- [x] **CHAT-12**: User can search across all conversations by message content
 
 ### Execution Trace
 
@@ -75,12 +75,12 @@ Requirements for initial release. Each maps to roadmap phases.
 - [ ] **SET-04**: User can configure web search providers (SearXNG, Exa)
 - [x] **SET-05**: User can test-connection for any configured endpoint
 - [ ] **SET-06**: Health diagnostics panel shows status of all configured integrations
-- [ ] **SET-07**: User can adjust model parameters (temperature, max tokens) per conversation or globally
+- [x] **SET-07**: User can adjust model parameters (temperature, max tokens) per conversation or globally
 
 ### Theme & Export
 
 - [ ] **UX-01**: User can switch between Light, Dark, and System themes
-- [ ] **UX-02**: User can export chat sessions as JSON for backup
+- [x] **UX-02**: User can export chat sessions as JSON for backup
 
 ### Testing & Quality
 
@@ -147,13 +147,13 @@ Which phases cover which requirements. Updated during roadmap creation.
 | CHAT-05 | Phase 4: Core Streaming Chat | Complete |
 | CHAT-06 | Phase 4: Core Streaming Chat | Complete |
 | CHAT-07 | Phase 4: Core Streaming Chat | Complete |
-| CHAT-08 | Phase 5: Chat Completions | Pending |
-| CHAT-09 | Phase 5: Chat Completions | Pending |
-| CHAT-10 | Phase 5: Chat Completions | Pending |
-| CHAT-11 | Phase 5: Chat Completions | Pending |
-| CHAT-12 | Phase 5: Chat Completions | Pending |
-| SET-07 | Phase 5: Chat Completions | Pending |
-| UX-02 | Phase 5: Chat Completions | Pending |
+| CHAT-08 | Phase 5: Chat Completions | Complete |
+| CHAT-09 | Phase 5: Chat Completions | Complete |
+| CHAT-10 | Phase 5: Chat Completions | Complete |
+| CHAT-11 | Phase 5: Chat Completions | Complete |
+| CHAT-12 | Phase 5: Chat Completions | Complete |
+| SET-07 | Phase 5: Chat Completions | Complete |
+| UX-02 | Phase 5: Chat Completions | Complete |
 | TRACE-01 | Phase 6: Execution Trace System | Complete |
 | TRACE-02 | Phase 6: Execution Trace System | Complete |
 | TRACE-03 | Phase 6: Execution Trace System | Complete |
