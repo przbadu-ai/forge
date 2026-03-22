@@ -1,237 +1,212 @@
 # Project Research Summary
 
-**Project:** Forge — Local-first AI assistant
-**Domain:** Local-first self-hosted AI chat application with agent execution transparency
-**Researched:** 2026-03-21
+**Project:** Forge v2.1 — PWA Capabilities
+**Domain:** Progressive Web App integration into existing Next.js 16 AI chat application
+**Researched:** 2026-03-22
 **Confidence:** HIGH
 
 ## Executive Summary
 
-Forge is a local-first, single-user AI assistant built on a Next.js 16 frontend and FastAPI 0.135 backend, with SQLite for relational persistence, ChromaDB for vector retrieval, and a custom agent orchestration loop. The competitive landscape (Open WebUI, LibreChat, Jan.ai, Msty) has converged on a standard feature set for streaming chat, conversation management, and file-based RAG. Forge's differentiation is not in those features but in full execution transparency: a persisted, replayable execution trace per message that shows every tool call, MCP invocation, and skill trigger as an expandable tree. No competitor does this today, and it is the product's core reason to exist.
+Forge v2.1 adds PWA capabilities to a fully functional v1.0 AI chat application built on Next.js 16 App Router, React 19, Tailwind CSS v4, and a FastAPI backend. The scope is precisely defined: installability, mobile responsiveness, and offline shell — not full offline-first functionality. Forge requires a live backend (Ollama, OpenAI, or other LLM APIs) for all meaningful operations, so the service worker's role is limited to caching the app shell for instant loads and providing graceful degradation when the backend is unreachable. This architectural constraint simplifies the caching strategy considerably and eliminates the need for complex offline data sync.
 
-The recommended approach is a clean layered architecture with distinct concerns: FastAPI routers handle HTTP concerns, a custom Orchestrator service runs the agentic loop, and three executor types (ToolExecutor, McpExecutor, SkillExecutor) adapt external systems behind a shared interface. SSE carries both token deltas and structured trace events over a single stream per chat turn. Trace events are stored as a JSON blob per message (not normalized rows) and replayed on conversation resume. The build sequence is strictly dependency-ordered: infrastructure and auth first, then basic streaming chat, then the trace system, then tool/MCP integration, then file RAG — each phase adding a coherent capability slice.
+The recommended approach uses `@serwist/next` (the maintained successor to the abandoned `next-pwa`) for service worker generation, Next.js's built-in `app/manifest.ts` convention for the web app manifest, and existing Tailwind CSS breakpoints for responsive layout. Total new dependencies are exactly three packages. Most PWA infrastructure (install prompt, offline detection, standalone mode detection) is implemented using native browser APIs with no additional libraries. This keeps the footprint minimal and avoids build-tool conflicts with Next.js 16's Turbopack dev server.
 
-The critical risks are infrastructure-level and must be addressed before any feature work: SQLite requires WAL mode + busy timeout to avoid lock errors under async concurrency; Alembic requires batch mode enabled in env.py before the first migration; the SSE stream must connect browser-to-FastAPI directly (not proxied through Next.js Route Handlers) to avoid buffering; and ChromaDB should run as a standalone HTTP server even locally to avoid multi-process data staleness. Getting these four things right in Phase 1 eliminates the most common sources of production failure for this stack.
-
----
+The most significant risks center on the service worker's interaction with Forge's existing SSE streaming architecture. Forge uses `fetch()` + `ReadableStream` for token-by-token AI responses — a pattern that looks like a normal POST request to the service worker and will be intercepted unless explicitly bypassed. This is the highest-priority technical risk and must be validated first in Phase 1. Secondary risks include the service worker missing from Docker deployments (standalone output mode requires explicit `public/` copying in the Dockerfile) and users stuck on old cached versions after deployment (solved with `skipWaiting()` + `clients.claim()` plus an update notification banner).
 
 ## Key Findings
 
 ### Recommended Stack
 
-The stack is a well-integrated Python/TypeScript split with strong version coherence. FastAPI 0.135.1 (native SSE via EventSourceResponse), SQLModel 0.0.22 (SQLAlchemy 2.0 + Pydantic V2 unified), and ChromaDB 1.5.5 (SQLite-backed embedded store) form the backend foundation. The openai Python client (2.29.0) provides OpenAI-compatible API access that works against Ollama, LM Studio, vLLM, and remote endpoints via base_url override. The MCP Python SDK (1.26.0) handles the full MCP client lifecycle for both stdio and HTTP transports. Authentication uses pwdlib[bcrypt] — not passlib, which is abandoned and broken on Python 3.12+.
-
-On the frontend, Next.js 16 with App Router, shadcn/ui component primitives, zustand for client state, and @tanstack/react-query for server state form a proven combination. Markdown rendering uses react-markdown + rehype-highlight (not assistant-ui, which would fight custom identity). The critical frontend decision is to use fetch() + ReadableStream for SSE consumption, not the native EventSource API, because EventSource only supports GET and cannot send a chat payload body.
+The existing stack requires minimal additions. `@serwist/next@^9.5.7` handles service worker generation and Next.js build integration. `serwist@^9.5.7` (devDependency) provides the service worker runtime API for writing typed `sw.ts`. `@serwist/turbopack@^9.5.6` enables Turbopack-compatible SW generation for local development. The `next-pwa` package — the most commonly found search result — is abandoned (last release 2022), incompatible with Next.js 15+, and must not be used.
 
 **Core technologies:**
-- Next.js 16.2 + TypeScript 5 — frontend framework with App Router; Server Components reduce client JS
-- FastAPI 0.135.1 — native SSE support (EventSourceResponse); Pydantic V2 native
-- Python 3.12 — best package support; ChromaDB 1.5.x not confirmed on 3.13
-- SQLite + SQLModel 0.0.22 + Alembic — zero-config local persistence with async support via aiosqlite
-- ChromaDB 1.5.5 — embedded local vector store; run as HTTP server to avoid multi-process staleness
-- openai 2.29.0 — OpenAI-compatible async client; works against any provider via base_url override
-- mcp 1.26.0 — official MCP Python SDK; supports stdio, SSE, and Streamable HTTP transports
-- sentence-transformers 3.x — local embedding (all-MiniLM-L6-v2); no API key required
-- zustand 5 + @tanstack/react-query 5 — client state + server state management; minimal boilerplate
-- pwdlib[bcrypt] — password hashing; replaces abandoned passlib
+- `@serwist/next@^9.5.7`: Service worker generation via Next.js build — maintained successor to next-pwa, verified working with App Router and standalone output
+- `serwist@^9.5.7` (dev): Service worker runtime — Workbox-based, type-safe SW authoring, compiles `sw.ts` to `public/sw.js`
+- `@serwist/turbopack@^9.5.6`: Turbopack dev compatibility — enables SW testing without requiring `--webpack` flag fallback
+- Native `app/manifest.ts`: Web app manifest — built into Next.js 16, no library needed, TypeScript-typed
+- Browser APIs only: Install prompt, offline detection, standalone detection — ~40-60 lines of React code, zero additional packages
 
-**Do not use:** passlib, LangChain/LangGraph, WebSockets for token streaming, native EventSource for POST SSE, redis, Celery, next-auth v4.
+**Do not use:** `next-pwa` (abandoned, webpack-only), `@ducanh2912/next-pwa` (superseded by Serwist), raw `workbox-*` imports, `web-push`/VAPID keys (out of scope), any IndexedDB wrappers (offline sync is an anti-feature for Forge).
 
 ### Expected Features
 
-Users of self-hosted AI assistants in 2026 have well-established baseline expectations formed by Open WebUI, LibreChat, Jan.ai, and Msty. Missing any table-stakes feature makes the product feel incomplete, regardless of differentiators.
+The research distinguishes sharply between PWA table stakes (required for the app to be genuinely installable and mobile-usable) and differentiators (features that put Forge ahead of competitors like Open WebUI and Claude.ai, which are not PWAs at all).
 
-**Must have (table stakes) — v1:**
-- Streaming token output — non-streaming feels broken to all modern AI chat users
-- Markdown + syntax-highlighted code rendering — primary output format for developer users
-- Conversation list with resume, rename, delete — expected from any chat product
-- Configurable LLM provider + model with test-connection button — prerequisite for any interaction
-- System prompt / custom instructions — global default + per-conversation override
-- Message regeneration (retry) — one-click retry on bad or failed output
-- File upload for document Q&A — all major competitors support this
-- Light/Dark/System theme — near-free with Tailwind + shadcn; expected universally
-- Single-user authentication — login gate for data protection
-- JSON export of conversations — basic data portability
+**Must have (table stakes — P1):**
+- Web App Manifest with name, icons (192x192 + 512x512 + maskable), display mode, theme_color — installability gate
+- Service worker with app shell caching — installability gate and instant load foundation
+- Install prompt UX for Chrome/Edge (`beforeinstallprompt`) and iOS (manual "Add to Home Screen" instructions)
+- Responsive chat layout with collapsible sidebar — the current fixed `w-64` sidebar is completely broken on mobile
+- Responsive header with hamburger menu and mobile Sheet drawer — navigation must work on small screens
+- Offline shell with clear "you're offline" state — graceful degradation when backend unreachable
+- Theme color meta tags, app icons, security headers for SW, viewport meta verification
 
-**Should have (differentiators) — v1:**
-- Execution trace UI per message (collapsed, expandable) — Forge's core differentiator; no competitor has this
-- Trace persistence + replay on conversation resume — unique; Open WebUI and LibreChat both lose trace state on refresh
-- MCP server registration + invocation with trace visibility — MCP is becoming the standard tool protocol
-- Agent skills configuration (enable/disable per session) — modular capability toggling
-- Source attribution for RAG answers (file name, chunk preview, similarity score) — few competitors show the source
-- Health diagnostics panel — status page for LLM, ChromaDB, embeddings, MCP servers
+**Should have (differentiators — P2, add after core passes Lighthouse):**
+- Offline conversation history (read-only cached API responses)
+- Smart reconnection UX (auto-retry + "back online" toast)
+- Swipe gestures for sidebar toggle on touch devices
+- Settings page touch-target and stacking adjustments
+- Standalone mode navigation verification (back button behavior without browser chrome)
 
-**Add after validation (v1.x):**
-- Conversation search, reranker configuration, web search tool, model parameter controls (temperature/max tokens), health diagnostics panel, configurable timeout/retry per provider
+**Defer (v3+):**
+- Push notifications — requires VAPID keys + notification server; no value for synchronous single-user chat
+- Background sync / full offline chat — backend dependency makes this a false promise
+- IndexedDB data mirror — full offline-first would require mirroring a complex SQLite schema
+- Bottom navigation bar — design paradigm conflict with existing top header + sidebar
+- Voice/audio input — product feature, not PWA infrastructure
 
-**Defer (v2+):**
-- Multi-user support, image generation, voice/TTS, parallel model comparison, advanced RAG (graph RAG, adaptive chunking), OAuth/SSO
-
-**Confirmed anti-features — do not build for MVP:** multi-user collaboration, OAuth/SSO, mobile app, LangGraph/AutoGen integration, image generation, voice call/video.
+**Key competitive insight:** Claude.ai and Open WebUI are NOT PWAs. ChatGPT is the only major AI chat with full PWA support. Making Forge installable puts it ahead of most self-hosted alternatives.
 
 ### Architecture Approach
 
-The architecture is a clean split: Next.js frontend communicates with FastAPI over HTTP REST and direct SSE. The FastAPI backend has four layers — routers (HTTP contract), services (business logic and orchestration), executors (external system adapters), and data stores (SQLite + ChromaDB). The Orchestrator service is the heart: a while-loop that sends messages to the LLM, detects tool call responses, dispatches to the appropriate executor, appends results to message history, and repeats until a final text response. The TraceEmitter sits alongside the Orchestrator and emits named SSE events (token, tool_start, tool_end, mcp_call, skill_start, run_done, run_error) over the same stream, while batching events for persistence on run completion.
+The PWA integration adds a thin infrastructure layer over the existing Next.js App Router structure. Three new files are purely additive (`manifest.ts`, `sw.ts`, `~offline/page.tsx`). Two new components handle SW lifecycle in isolation (`ServiceWorkerRegistration.tsx` in `providers.tsx`, `InstallPrompt.tsx`). The responsive layout changes modify three existing files (`chat/layout.tsx`, `app-header.tsx`, `settings/layout.tsx`) and introduce one new hook (`useSidebar`).
 
-The executor pattern is critical for testability: ToolExecutor, McpExecutor, and SkillExecutor all implement `BaseExecutor` with `invoke(name, input) -> str` and `list_tools() -> list[ToolDefinition]`. The Orchestrator never knows which executor handles a call — it routes through an executor registry. This makes unit-testing the Orchestrator loop trivial by mocking executors.
+The critical architectural decisions are: (1) NetworkOnly for all `/api/*` routes in the service worker — SSE streaming cannot be cached and chat data must always be fresh; (2) CSS-first responsive design using Tailwind breakpoints (`hidden md:block`) with JS state only for drawer open/close toggle — prevents hydration mismatches from server/client layout divergence; (3) SW registration in a dedicated client component inside `providers.tsx`, never in root layout (a server component).
 
 **Major components:**
-1. **Orchestrator Service** — core agent loop (model call → tool dispatch → observation → repeat)
-2. **TraceEmitter** — emits structured SSE events per step; persists complete trace JSON at run end
-3. **ToolExecutor / McpExecutor / SkillExecutor** — executor registry adapters; uniform interface
-4. **FilePipeline** — upload → chunk → embed → ChromaDB storage; async background to avoid blocking SSE
-5. **SQLite via SQLModel** — conversations, messages, traces (JSON blob), file records, settings
-6. **ChromaDB HTTP server** — vector store; one shared collection with metadata filtering, not per-conversation collections
+1. `sw.ts` / `public/sw.js` — Service worker with precache manifest, NetworkOnly for `/api/*`, StaleWhileRevalidate for app shell, offline fallback to `/~offline`
+2. `manifest.ts` — Dynamic TypeScript manifest with theme-aware `theme_color`, `start_url: "/chat"`, icon references
+3. `ServiceWorkerRegistration.tsx` — Client component in providers; registers SW, handles update detection and notification
+4. `InstallPrompt.tsx` — Client component; captures `beforeinstallprompt` for Chromium, detects iOS, hides when `display-mode: standalone`
+5. `useSidebar` hook — Manages mobile drawer open/close state; CSS breakpoints control desktop visibility without JS
+6. Modified `chat/layout.tsx` — Sidebar hidden on mobile via `hidden md:block`, renders in shadcn Sheet drawer triggered by hamburger button
+7. `~offline/page.tsx` — Static server component served as offline fallback; matches Forge visual style
 
-**Key patterns to follow:**
-- Store traces as a JSON array in a single TEXT column, not normalized rows — traces are always read as a complete set
-- Use one shared ChromaDB collection with metadata filters, not per-conversation collections
-- File uploads and embedding happen asynchronously before chat, not inline during a streaming turn
-- SSE stream connects browser directly to FastAPI, bypassing Next.js Route Handlers for streaming routes
+**Key pattern:** Forge's cross-origin API architecture (frontend port 3000, backend port 8000) means the service worker cannot intercept API calls even if you wanted it to — the SW scope is same-origin only. This is a feature: the SW handles only the app shell, and API responses are never cached.
 
 ### Critical Pitfalls
 
-All 9 pitfalls are documented in PITFALLS.md with recovery strategies. The top 5 that must be addressed before any feature work:
+1. **SSE streaming intercepted by service worker** — Forge uses `fetch()` + `ReadableStream` for token streaming, which looks like a normal POST to the SW (not `text/event-stream` Accept header, so standard SSE bypass checks fail). The SW buffers or corrupts the stream. Prevention: place `NetworkOnly` rule for `/api/*` first in `runtimeCaching` array so it matches before default rules. Validate immediately after SW registration — this is the most likely regression.
 
-1. **SSE buffering through Next.js Route Handlers** — tokens arrive in a single batch in production. Prevention: connect browser directly to FastAPI for the SSE stream; set `X-Accel-Buffering: no`, disable Next.js `compress`, export `dynamic = 'force-dynamic'`. Address in Phase 1.
+2. **SW missing from Docker standalone output** — `output: "standalone"` does NOT copy `public/` into the Docker image. SW works in dev, is silently absent in production. Prevention: add `COPY --from=builder /app/public ./public` to Dockerfile. Verify with `curl /sw.js` in the running container.
 
-2. **SQLite "database is locked" under async concurrency** — intermittent `OperationalError` when streaming writes overlap with reads. Prevention: enable WAL mode (`PRAGMA journal_mode=WAL`) + busy timeout (`PRAGMA busy_timeout=5000`) at connection creation; use `NullPool` with aiosqlite. Address in Phase 1 database setup.
+3. **Users stuck on stale cached app version** — SW lifecycle holds users on old versions indefinitely after deployment. Prevention: `skipWaiting()` + `clients.claim()` in the SW, plus an "Update available" toast with user-triggered reload. Register SW with `updateViaCache: 'none'`.
 
-3. **Alembic ALTER TABLE failures on SQLite schema changes** — any column modification/drop beyond ADD COLUMN fails. Prevention: enable batch mode in `env.py` (`render_as_batch=True`) before writing any migration. Address in Phase 1 before first migration.
+4. **Cached authenticated API responses served cross-session** — If any `/api/*` route is accidentally cached, stale or wrong-user data appears after logout/login. Prevention: never cache API responses in the SW. Clear all caches on logout via `postMessage`.
 
-4. **ChromaDB library mode data staleness in multi-process** — workers maintain separate in-memory state; uploads by one worker are invisible to others. Prevention: run ChromaDB as an HTTP server (`chroma run --path ./chroma_data`) even locally; use `chromadb.HttpClient`. Address before RAG phase.
-
-5. **MCP zombie processes on reconfiguration** — old child processes accumulate when settings change. Prevention: implement `McpProcessManager` with PID tracking, clean shutdown sequence (stdin close → SIGTERM → SIGKILL), and orphan cleanup on startup. Address in MCP integration phase.
-
-**Additional critical concerns:** API keys must use Pydantic `SecretStr` and never be returned in full from GET endpoints; markdown rendering must use `rehype-sanitize` to block LLM-injected XSS; abort signals must propagate to the upstream LLM request (not just the client listener).
-
----
+5. **Manifest + cookie auth — PWA opens to login screen** — `SameSite=Strict` cookies are not sent on PWA standalone launches. Prevention: set refresh token cookie to `SameSite=Lax`. Test full install-close-reopen cycle to verify auth persists.
 
 ## Implications for Roadmap
 
-Research establishes a clear dependency graph that dictates phase ordering. Each phase must be complete before the next can begin.
+Based on research, the architecture file's suggested 3-phase build order aligns precisely with feature dependencies and pitfall mitigation priorities. Phases are independent enough to deploy incrementally, with Phase 1 carrying the highest config-change risk and Phase 3 touching the most existing code.
 
-### Phase 1: Infrastructure Foundation
-**Rationale:** Every subsequent phase depends on the database, migrations, and FastAPI/Next.js skeleton. Pitfalls 4 (SQLite locking) and 7 (Alembic batch mode) must be resolved here or they corrupt everything built on top. This phase has no user-visible features — it is pure correctness.
-**Delivers:** Working FastAPI app factory, SQLite engine with WAL mode + busy timeout, SQLModel models with Alembic migrations (batch mode enabled), Next.js shell with App Router and shadcn/ui configured, uv and npm dependency lock files, development tooling (ruff, mypy, vitest).
-**Avoids:** SQLite lock errors (Pitfall 4), Alembic migration failures (Pitfall 7)
-**Research flag:** Standard patterns — no additional research needed; exact configuration is documented in STACK.md and PITFALLS.md.
+### Phase 1: PWA Foundation
 
-### Phase 2: Auth + Settings Foundation
-**Rationale:** Authentication gates every API endpoint. Settings (LLM provider config) are required before the chat interface is useful. These two must come before chat because without them you cannot test chat end-to-end. API key security (Pitfall 9) must be designed in here, not retrofitted.
-**Delivers:** Single-user login (username + password + bcrypt via pwdlib), JWT session tokens (python-jose), protected FastAPI middleware, Settings CRUD for LLM provider configuration, test-connection button, light/dark/system theme (next-themes).
-**Addresses:** Auth, LLM provider config, test-connection, theme (all P1 table stakes)
-**Avoids:** API key plain text storage (Pitfall 9), session token security
-**Research flag:** Standard patterns — auth and settings are well-documented; no additional research needed.
+**Rationale:** Service worker and manifest are technical prerequisites for install prompt, offline features, and Lighthouse audit compliance. This phase has zero visual impact on existing desktop users and can be safely deployed to production independently. Config changes to `next.config.ts` carry the most risk of breaking the build — doing this first surfaces issues before other work depends on it.
 
-### Phase 3: Core Streaming Chat
-**Rationale:** This is the core product experience. Conversation CRUD, message persistence, LLM streaming via SSE, and markdown rendering form the foundation that all agent features extend. The SSE buffering pitfall (Pitfall 1) must be solved here with the correct browser-to-FastAPI direct connection pattern. Markdown XSS (Pitfall 8) must be addressed before first render.
-**Delivers:** Conversation creation/list/resume/rename/delete, streaming chat via SSE (browser → FastAPI directly), markdown + syntax-highlighted code rendering (react-markdown + rehype-highlight + rehype-sanitize), message persistence, system prompt support, message retry/regenerate, JSON export.
-**Addresses:** Streaming chat, conversation management, markdown rendering, system prompt, retry, export (all P1 table stakes)
-**Avoids:** SSE buffering (Pitfall 1), streaming abort/resume incompatibility (Pitfall 3), markdown XSS (Pitfall 8)
-**Research flag:** Standard patterns for most; the SSE stream implementation (browser → FastAPI direct, fetch + ReadableStream) is well-documented. Abort signal propagation needs careful implementation.
+**Delivers:** Fully installable PWA passing Lighthouse PWA audit. App shell loads instantly from cache. Offline fallback page shown instead of browser error. No user-visible behavior change for existing desktop users.
 
-### Phase 4: Execution Trace System
-**Rationale:** The trace system is Forge's primary differentiator and must be in v1 to validate the concept. It is built alongside (not after) tools — the TraceEmitter infrastructure is shared by all subsequent executor types. Building trace before tools means the UI and persistence schema are established before tool events arrive.
-**Delivers:** TraceEmitter service (emits named SSE events: token, tool_start, tool_end, run_done, run_error), trace persistence (JSON blob in `traces` table, FK to message), TracePanel UI component (collapsed by default, expandable), trace replay on conversation resume.
-**Addresses:** Execution trace UI, trace persistence + replay (P1 differentiators)
-**Avoids:** Trace event DB bloat from normalized rows (Pitfall — store as JSON blob, not rows)
-**Research flag:** Standard patterns for SSE event types. The trace schema design (JSON blob vs normalized) is clearly established in ARCHITECTURE.md.
+**Addresses:** Web App Manifest, App Icons, Service Worker + App Shell Caching, Offline Shell with Graceful Degradation, Security Headers for SW, Theme Color Meta Tags, Viewport Meta, `~offline` page
 
-### Phase 5: Orchestration Loop + Tool/MCP Integration
-**Rationale:** With trace infrastructure in place, the orchestrator loop and executor pattern can be built. This phase delivers the agentic loop that enables tool calling, MCP invocations, and skills. All three executor types share the BaseExecutor interface established here. MCP process lifecycle management (Pitfall 6) must be addressed in this phase.
-**Delivers:** Custom Orchestrator service (model → tools → model while-loop), executor registry, ToolExecutor (built-in tools), McpExecutor + McpProcessManager (MCP server lifecycle, tool discovery, invocation), SkillExecutor (skill workflows), MCP settings UI (register/remove servers), skills configuration UI (enable/disable per session), provider API divergence adapter layer (Pitfall 2).
-**Addresses:** Custom orchestration loop, MCP integration, agent skills (all P1), web search tool (P2 — can defer to v1.x)
-**Avoids:** MCP zombie processes (Pitfall 6), provider API divergence (Pitfall 2)
-**Research flag:** MCP process lifecycle management and per-provider capability detection may benefit from a research-phase pass. vLLM tool call configuration (`--enable-auto-tool-choice` with parser flags) needs validation against actual vLLM deployment.
+**Avoids:**
+- Pitfall 1 (SSE streaming intercepted) — NetworkOnly rule for `/api/*` implemented and tested here
+- Pitfall 2 (cached auth data) — caching architecture decided here: only app shell, never API responses
+- Pitfall 3 (SW missing from Docker) — Dockerfile verified here before any deployment assumption is made
+- Pitfall 7 (next-pwa abandoned) — technology decision already made; Serwist selected
 
-### Phase 6: File Upload + RAG + Source Attribution
-**Rationale:** RAG is a table-stakes feature but has significant infrastructure complexity (FilePipeline, ChromaDB, embedding). It can be developed in parallel with Phase 5 after Phase 3 completes, but must follow the core chat phase because retrieval context is injected into chat turns. ChromaDB must run as an HTTP server (Pitfall 5) — establish this before writing any RAG code.
-**Delivers:** File upload endpoint (PDF, DOCX, TXT), async FilePipeline (chunk → embed → ChromaDB HTTP server), retrieval at chat time (query embedding → ChromaDB → top-K chunks → context injection), source attribution UI (file name, chunk preview, similarity score per RAG answer), embedding settings UI (model selection, local vs remote).
-**Addresses:** File upload + RAG, source attribution (P1 must-haves)
-**Avoids:** ChromaDB library mode staleness (Pitfall 5), blocking embedding during chat (Architecture anti-pattern 5)
-**Research flag:** ChromaDB HTTP server setup and the FilePipeline (chunking strategy, async upload flow) may benefit from a targeted research-phase pass to confirm the correct API surface for ChromaDB 1.5.5 HTTP client.
+**Steps:** Install `@serwist/next` + `serwist` + `@serwist/turbopack`, wrap `next.config.ts`, add webworker types to `tsconfig.json`, create `sw.ts` with NetworkOnly for `/api/*`, create `manifest.ts`, generate PWA icons, create `~offline/page.tsx`, update `.gitignore`, add `dev:pwa` npm script.
 
-### Phase 7: Quality + Polish
-**Rationale:** Final pass to ensure correctness, coverage, and usability before launch. All pitfall checklists verified. UX issues (loading states, scroll lock, error messages) addressed.
-**Delivers:** Test coverage (pytest-asyncio for backend, Vitest + Playwright for frontend), health diagnostics panel, conversation search, model parameter controls (temperature/max tokens), all UX pitfalls addressed (loading states, scroll lock, error mapping), "looks done but isn't" checklist verified end-to-end.
-**Addresses:** Health diagnostics (P2), conversation search (P2), model parameter controls (P2)
-**Research flag:** Standard patterns — no additional research needed for testing infrastructure.
+**Needs research:** No — official Next.js PWA guide and Serwist docs are complete and current for Next.js 16.2.1. Implementation is copy-pasteable.
+
+### Phase 2: Install UX and Offline Experience
+
+**Rationale:** Depends on Phase 1 (SW must be registered before `beforeinstallprompt` fires; offline features require cached shell assets from Phase 1). Small surface area — new components only, no modifications to existing code. Validates the install flow end-to-end including auth persistence in standalone mode.
+
+**Delivers:** Users can discover and install the PWA on desktop and mobile. Offline state communicated clearly via banner and disabled input. Service worker update lifecycle handled gracefully with user notification.
+
+**Addresses:** Install Prompt UX (Chrome/Edge + iOS), Offline Conversation History (P2), Smart Reconnection UX (P2), SW Update Notification, Standalone Navigation Verification
+
+**Avoids:**
+- Pitfall 4 (manifest + auth cookie) — `SameSite=Lax` fix tested and verified here with full install-close-reopen cycle
+- Pitfall 5 (cache invalidation) — `skipWaiting()` + update banner implemented here before first production deployment
+- Pitfall 6 (silent offline failures) — offline state indicator and disabled send button implemented here
+
+**Steps:** Create `ServiceWorkerRegistration.tsx` + mount in `providers.tsx`, create `InstallPrompt.tsx` (beforeinstallprompt + iOS detection + standalone hide), add online/offline event listeners and status banner in AppHeader, implement SW update notification toast.
+
+**Needs research:** No — standard browser API patterns, well-documented. Auth cookie `SameSite` fix is a one-line backend change.
+
+### Phase 3: Responsive Layout
+
+**Rationale:** Technically independent of service worker (can be built in parallel with Phases 1-2), but placed last to allow integration testing on an actually-installed PWA in standalone mode. The sidebar refactor touches the most existing code and has the most risk of visual regression on existing desktop users. Benefits from Phase 1+2 being stable first.
+
+**Delivers:** Forge is fully usable on mobile. Sidebar collapses to a Sheet drawer on screens under 768px. Header adapts with hamburger menu. All existing features (chat, traces, settings, file upload) are usable at 375px width. No horizontal scroll at any breakpoint.
+
+**Addresses:** Responsive Chat Layout (collapsible sidebar drawer), Responsive Header (hamburger + Sheet), Responsive Settings Page, MessageBubble mobile width, Swipe Gestures for sidebar (P2), Touch target audit (>= 44px), Standalone display mode navigation
+
+**Avoids:**
+- Anti-pattern: JS-driven responsive layout causing hydration mismatches — CSS-first breakpoints with minimal JS drawer state
+- Anti-pattern: `window.innerWidth` checks on server components
+- Existing SSE streaming and auth flows are not modified in this phase
+
+**Steps:** Create `useSidebar` hook, modify `chat/layout.tsx` (sidebar `hidden md:block`, Sheet drawer for mobile), modify `app-header.tsx` (hamburger trigger on mobile, responsive nav), adjust `settings/layout.tsx` padding, adjust `MessageBubble.tsx` max-width for mobile, add swipe gesture listeners for drawer.
+
+**Needs research:** No — standard Tailwind responsive patterns; shadcn/ui Sheet component is already installed and documented in the codebase.
 
 ### Phase Ordering Rationale
 
-- **Infrastructure before auth:** WAL mode, batch migrations, and the async SQLite engine must be correct before any endpoint can write data.
-- **Auth before chat:** Session tokens gate all API routes; no feature can be tested end-to-end without them.
-- **Chat before trace:** There must be messages and SSE events before trace infrastructure has anything to emit or persist.
-- **Trace before tools:** TraceEmitter and the trace DB schema must exist before any executor emits events; building them together avoids retrofitting.
-- **Tools before RAG:** The orchestrator loop handles RAG retrieval context injection; RAG needs the orchestrator in place. RAG also benefits from the executor pattern established in Phase 5.
-- **RAG can parallelize with tools:** After Phase 3 is complete, the FilePipeline and ChromaDB work can run concurrently with the orchestrator/executor work in Phase 5, merging in Phase 6.
+- Phase 1 before Phase 2: `beforeinstallprompt` requires a registered service worker — install UX cannot be tested or built without Phase 1 complete
+- Phase 1 before Phase 3: Allows responsive layout testing on an actually-installed PWA in standalone mode — catches navigation issues that only appear without browser chrome
+- Phase 3 is independent but last: Responsive layout carries the most visual regression risk (touches the most existing component code); isolating it makes debugging cleaner
+- Each phase is independently deployable to production — no phase blocks a release increment
+- Pitfalls 1 and 2 (SSE and auth caching) are resolved in Phase 1, preventing them from being introduced by Phase 2 or 3 work
 
 ### Research Flags
 
-Phases likely needing deeper research during planning:
-- **Phase 5 (MCP Integration):** MCP process lifecycle patterns and per-provider capability detection (Ollama vs LM Studio vs vLLM tool call differences) are complex. The MCP Python SDK 1.26.0 API surface and subprocess management patterns warrant a `/gsd:research-phase` pass.
-- **Phase 6 (RAG/ChromaDB):** ChromaDB 1.5.5 HTTP client API and the correct async initialization pattern for the FilePipeline may need a targeted research pass — the library is actively evolving and the HTTP client API has changed across versions.
+Phases with standard patterns (no additional research needed):
+- **Phase 1:** Official Next.js PWA guide (updated 2026-02-11) + Serwist docs are complete and verified against Next.js 16.2.1. All configuration steps are explicitly documented.
+- **Phase 2:** Browser APIs (`beforeinstallprompt`, `navigator.onLine`, `online`/`offline` events) are stable MDN-documented APIs. shadcn/ui Sheet is already installed in the codebase.
+- **Phase 3:** Tailwind CSS responsive breakpoints are core framework features. shadcn/ui Sheet/Drawer for mobile navigation is a standard documented pattern.
 
-Phases with standard patterns (skip research-phase):
-- **Phase 1 (Infrastructure):** SQLite WAL mode, Alembic batch mode, FastAPI lifespan — all exactly documented in PITFALLS.md and STACK.md.
-- **Phase 2 (Auth):** Single-user JWT auth with pwdlib is well-documented; the FastAPI auth tutorial covers this precisely.
-- **Phase 3 (Streaming Chat):** SSE pattern (browser → FastAPI direct, fetch + ReadableStream), react-markdown + rehype-sanitize — all well-documented. The pitfall avoidance strategies are concrete and implementation-ready.
-- **Phase 4 (Trace):** SSE event types and JSON blob storage pattern are fully specified in ARCHITECTURE.md.
-- **Phase 7 (Quality):** Standard testing infrastructure.
-
----
+No phase requires a `/gsd:research-phase` call — research coverage is comprehensive across all three phases.
 
 ## Confidence Assessment
 
 | Area | Confidence | Notes |
 |------|------------|-------|
-| Stack | HIGH | Versions verified against PyPI/npm as of 2026-03-21; version compatibility table cross-referenced |
-| Features | HIGH | Based on direct analysis of 6 live competitors (Open WebUI, LibreChat, Jan.ai, Msty, AnythingLLM, LobeChat) |
-| Architecture | HIGH | Patterns verified across official docs, multiple implementation guides, and production projects |
-| Pitfalls | HIGH | Multiple verified sources per pitfall; several with linked GitHub issues and production post-mortems |
+| Stack | HIGH | Verified against Next.js official PWA guide (2026-02-11), npm registry (package publish dates confirm March 2026 currency), and Serwist official docs. Package versions confirmed current. next-pwa abandonment confirmed. |
+| Features | HIGH | Based on direct Forge codebase analysis (identified specific files: `chat/layout.tsx`, `app-header.tsx`, `next.config.ts`) + competitor PWA audit (ChatGPT, Claude.ai, Open WebUI). Feature boundaries are clear and well-justified for Forge's specific backend dependency. |
+| Architecture | HIGH | Implementation patterns verified against Next.js 16 official guide and Serwist docs. 3-phase build order grounded in component dependency analysis. Anti-patterns are Forge-specific (SSE streaming, cross-origin API, standalone Docker). |
+| Pitfalls | HIGH | SSE/SW interaction verified in W3C spec issues (#882, #885). Auth/cookie pitfall verified against real-world OHIF case study. Docker/standalone pitfall documented in Next.js standalone output docs. All pitfalls cross-referenced with Forge codebase analysis. |
 
-**Overall confidence:** HIGH
+**Overall confidence: HIGH**
 
 ### Gaps to Address
 
-- **vLLM tool call configuration in production:** The `--enable-auto-tool-choice` flag with the correct parser variant (hermes, llama3, mistral) needs validation against real vLLM deployment before Phase 5. The research documents the requirement but integration testing is needed.
-- **ChromaDB 1.5.5 HTTP client API:** The exact initialization pattern for `chromadb.HttpClient` in async FastAPI context (lifespan startup, collection caching) should be confirmed during Phase 6 planning since the library API has changed across versions.
-- **Sentence-transformers startup time:** The sentence-transformers library (heavy torch dependency) can significantly increase cold-start time. Consider lazy initialization with an `Optional[EmbeddingProvider]` pattern — validate the impact before Phase 6.
-- **Streaming abort signal propagation to LLM:** The exact pattern for propagating `AbortSignal` from the browser through Next.js fetch through FastAPI to the upstream LLM streaming request needs implementation-level verification in Phase 3.
+- **`@serwist/turbopack` compatibility with Next.js 16.2.1:** The package is documented for Next.js 15-16 but the dual-config pattern (dev vs. production) may need testing in the actual project environment. Fallback is `next dev --webpack` — functional but slower. Low risk, fast to verify in Phase 1.
 
----
+- **iOS PWA auth persistence:** Safari's handling of cookies in standalone PWA mode can differ by iOS version. The `SameSite=Lax` fix is the documented solution but should be verified on an actual iOS device (not just Chrome DevTools mobile emulation). Address in Phase 2 testing.
+
+- **Forge icon assets:** Research assumes Forge has logo/branding assets to generate 192x192 and 512x512 PNG icons from. If no source asset exists, icon creation is a prerequisite for Phase 1 completion that falls outside the technical research scope.
+
+- **`next dev --experimental-https` for LAN mobile testing:** The flag exists in Next.js 16 but certificate trust behavior varies by device and OS. LAN testing on iOS requires trusting a self-signed cert. Acceptable workaround: test install flow via Chrome DevTools device emulation + ngrok for real device testing if needed.
 
 ## Sources
 
 ### Primary (HIGH confidence)
-- [FastAPI PyPI](https://pypi.org/project/fastapi/) — version 0.135.1, native SSE, Pydantic V2 requirement
-- [FastAPI SSE official docs](https://fastapi.tiangolo.com/tutorial/server-sent-events/) — EventSourceResponse pattern
-- [FastAPI async tests](https://fastapi.tiangolo.com/advanced/async-tests/) — httpx AsyncClient pattern
-- [Next.js 16 blog](https://nextjs.org/blog) — version 16.2.0 confirmed March 2026
-- [openai PyPI](https://pypi.org/project/openai/) — version 2.29.0, asyncio-native
-- [mcp PyPI](https://pypi.org/project/mcp/) — version 1.26.0, spec 2025-11-25
-- [chromadb PyPI](https://pypi.org/project/chromadb/) — version 1.5.5
-- [Open WebUI GitHub](https://github.com/open-webui/open-webui) — competitor feature analysis
-- [LibreChat GitHub](https://github.com/danny-avila/LibreChat) — competitor feature analysis
-- [ChromaDB Cookbook — Road to Production](https://cookbook.chromadb.dev/running/road-to-prod/) — multi-process constraints
-- [Alembic batch migrations — official docs](https://alembic.sqlalchemy.org/en/latest/batch.html) — SQLite ALTER TABLE limitation
-- [passlib deprecation discussion](https://github.com/fastapi/fastapi/discussions/11773) — passlib abandoned; pwdlib recommended
+- [Next.js Official PWA Guide](https://nextjs.org/docs/app/guides/progressive-web-apps) — manifest.ts, SW registration, install prompt, security headers, Serwist recommendation (updated 2026-02-11)
+- [Next.js manifest.ts API Reference](https://nextjs.org/docs/app/api-reference/file-conventions/metadata/manifest) — built-in manifest file convention
+- [Serwist Getting Started with Next.js](https://serwist.pages.dev/docs/next/getting-started) — `@serwist/next` configuration, `sw.ts` patterns, Turbopack support
+- [@serwist/next on npm](https://www.npmjs.com/package/@serwist/next) — version 9.5.7, published March 2026
+- [serwist on npm](https://www.npmjs.com/package/serwist) — version 9.5.7, published March 2026
+- [@serwist/turbopack on npm](https://www.npmjs.com/package/@serwist/turbopack) — version 9.5.6
+- [MDN: beforeinstallprompt](https://developer.mozilla.org/en-US/docs/Web/API/Window/beforeinstallprompt_event) — install prompt browser API
+- [MDN PWA Best Practices](https://developer.mozilla.org/en-US/docs/Web/Progressive_web_apps/Guides/Best_practices) — PWA standards reference
+- [W3C ServiceWorker Issue #885](https://github.com/w3c/ServiceWorker/issues/885) — SSE bypass behavior in service workers
+- [W3C ServiceWorker Issue #882](https://github.com/w3c/ServiceWorker/issues/882) — ReadableStream lifetime in SW context
+- Forge codebase: `next.config.ts`, `useChat.ts`, `api.ts`, `auth-context.tsx`, `chat/layout.tsx` — direct analysis of SSE, auth, API patterns, and current layout structure
 
 ### Secondary (MEDIUM confidence)
-- [Agentic Loop with Tool Calling — Temporal Docs](https://docs.temporal.io/ai-cookbook/agentic-loop-tool-call-openai-python) — orchestrator loop pattern
-- [ChromaDB library mode staleness](https://medium.com/@okekechimaobi/chromadb-library-mode-stale-rag-data-never-use-it-in-production-heres-why-b6881bd63067) — embedded mode production constraint
-- [SQLite concurrent writes — tenthousandmeters](https://tenthousandmeters.com/blog/sqlite-concurrent-writes-and-database-is-locked-errors/) — WAL mode and busy timeout
-- [Fixing SSE streaming in Next.js — Medium (Jan 2026)](https://medium.com/@oyetoketoby80/fixing-slow-sse-server-sent-events-streaming-in-next-js-and-vercel-99f42fbdb996) — buffering pitfall and fix
-- [vercel/next.js SSE discussion #48427](https://github.com/vercel/next.js/discussions/48427) — SSE buffering root cause
-- [Real Faults in MCP Software — arXiv 2603.05637](https://arxiv.org/html/2603.05637v1) — MCP process lifecycle failures
-- [MCP Lifecycle spec](https://modelcontextprotocol.io/specification/2025-03-26/basic/lifecycle) — shutdown sequence
-- [Ollama vs vLLM vs LM Studio (2026)](https://www.clawctl.com/blog/ollama-vs-vllm-vs-lm-studio) — provider divergence
+- [web.dev: Installation Prompt](https://web.dev/learn/pwa/installation-prompt) — PWA install UX patterns
+- [LogRocket: Next.js 16 PWA with offline support](https://blog.logrocket.com/nextjs-16-pwa-offline-support/) — community verification of Serwist integration
+- [Aurora Scharff: Next.js 16 + Serwist](https://aurorascharff.no/posts/dynamically-generating-pwa-app-icons-nextjs-16-serwist/) — Next.js 16-specific integration details
+- [OHIF/Viewers Issue #1691](https://github.com/OHIF/Viewers/issues/1691) — real-world cached auth data case study
+- [Infinity Interactive: Taming PWA Cache Behavior](https://iinteractive.com/resources/blog/taming-pwa-cache-behavior) — SW update lifecycle problems and solutions
+- [Microsoft PWA Best Practices](https://learn.microsoft.com/en-us/microsoft-edge/progressive-web-apps/how-to/best-practices) — additional PWA UX patterns
 
 ### Tertiary (LOW confidence)
-- [AI SDK UI: Chatbot Resume Streams — Vercel](https://ai-sdk.dev/docs/ai-sdk-ui/chatbot-resume-streams) — abort vs resume architecture tradeoff; implementation for Forge differs from Vercel AI SDK approach
+- [Rich Harris: Stuff I wish I'd known about service workers](https://gist.github.com/Rich-Harris/fd6c3c73e6e707e312d7c5d7d0f3b2f9) — practical SW pitfalls; older but core patterns remain valid
+- [The Codeship: Service Worker Pitfalls and Best Practices](https://www.thecodeship.com/web-development/guide-service-worker-pitfalls-best-practices/) — general SW pitfall reference
 
 ---
-
-*Research completed: 2026-03-21*
+*Research completed: 2026-03-22*
 *Ready for roadmap: yes*

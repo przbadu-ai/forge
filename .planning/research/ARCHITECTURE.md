@@ -1,615 +1,516 @@
-# Architecture Research
+# Architecture Research: PWA Integration with Forge
 
-**Domain:** Local-first AI assistant chat application (Next.js + FastAPI split stack)
-**Researched:** 2026-03-21
-**Confidence:** HIGH (patterns verified across official docs, multiple implementation guides, and production projects)
+**Domain:** Progressive Web App integration into existing Next.js 16 App Router application
+**Researched:** 2026-03-22
+**Confidence:** HIGH
 
-## Standard Architecture
-
-### System Overview
+## System Overview
 
 ```
-┌──────────────────────────────────────────────────────────────────┐
-│                        BROWSER / CLIENT                           │
-├──────────────────────────────────────────────────────────────────┤
-│  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐            │
-│  │  Chat UI     │  │  Settings UI │  │  Trace UI    │            │
-│  │  (Streaming) │  │  (CRUD)      │  │  (Expandable)│            │
-│  └──────┬───────┘  └──────┬───────┘  └──────┬───────┘            │
-│         │                 │                  │                    │
-│  ┌──────▼─────────────────▼──────────────────▼───────┐            │
-│  │           Next.js App Router (Frontend)            │            │
-│  │  Server Components · Route Handlers · API Proxy    │            │
-│  └──────────────────────────┬─────────────────────────┘            │
-└─────────────────────────────┼────────────────────────────────────┘
-                              │ HTTP / SSE
-┌─────────────────────────────▼────────────────────────────────────┐
-│                    FastAPI Backend (Python)                        │
-├──────────────────────────────────────────────────────────────────┤
-│  ┌────────────┐  ┌────────────┐  ┌────────────┐  ┌────────────┐  │
-│  │  /chat     │  │  /files    │  │  /settings │  │  /health   │  │
-│  │  Router    │  │  Router    │  │  Router    │  │  Router    │  │
-│  └─────┬──────┘  └─────┬──────┘  └─────┬──────┘  └────────────┘  │
-│        │               │               │                          │
-│  ┌─────▼───────────────▼───────────────▼──────────────────────┐  │
-│  │                  Orchestrator Service                        │  │
-│  │          model → tools/MCP/skills → model loop              │  │
-│  │   ToolExecutor · McpExecutor · SkillExecutor · TraceEmitter │  │
-│  └─────────────────────────┬──────────────────────────────────┘  │
-│                             │                                     │
-│  ┌──────────────────────────▼────────────────────────────────┐   │
-│  │              External / Integration Layer                   │   │
-│  │  OpenAI-compat LLM  ·  MCP Servers  ·  Web Search APIs    │   │
-│  └──────────────────────────────────────────────────────────┘   │
-│                                                                    │
-│  ┌────────────────────┐  ┌────────────────────────────────────┐   │
-│  │   SQLite (SQLModel)│  │  ChromaDB                          │   │
-│  │  conversations     │  │  embeddings · collections          │   │
-│  │  messages          │  │  chunks → similarity search        │   │
-│  │  traces            │  │                                    │   │
-│  │  settings          │  │                                    │   │
-│  │  files             │  │                                    │   │
-│  └────────────────────┘  └────────────────────────────────────┘   │
-└──────────────────────────────────────────────────────────────────┘
+                         EXISTING                              NEW (PWA)
+                         --------                              ---------
+
+Root Layout (app/layout.tsx)
+  |-- <html> + <body>
+  |-- Providers (theme, query, auth)           + viewport export
+  |                                            + manifest.ts (linked via metadata)
+  |
+  +-- /login (public)
+  |
+  +-- (protected)/layout.tsx                   (no changes needed)
+  |     |-- AppHeader                          ~ responsive: hamburger on mobile
+  |     |-- <main>
+  |     |
+  |     +-- /chat/layout.tsx
+  |     |     |-- <aside> w-64 sidebar         ~ responsive: drawer on mobile
+  |     |     |-- <main> chat area             ~ full-width on mobile
+  |     |     +-- /chat/[id]/page.tsx
+  |     |
+  |     +-- /settings/layout.tsx               ~ responsive: stack on mobile
+  |           +-- /settings/page.tsx
+  |
+  +-- /~offline/page.tsx                       + NEW: offline fallback page
+  |
+  +-- manifest.ts                              + NEW: web app manifest
+  |
+  +-- sw.ts                                    + NEW: service worker source
+
+public/
+  |-- icon-192x192.png                         + NEW: PWA icons
+  |-- icon-512x512.png                         + NEW: PWA icons
+  |-- sw.js                                    + NEW: generated (gitignored)
+  |-- swe-worker-*.js                          + NEW: generated (gitignored)
+
+next.config.ts                                 ~ wrap with withSerwist
+tsconfig.json                                  ~ add webworker lib + serwist types
 ```
 
-### Component Responsibilities
+## Integration Points with Existing Architecture
 
-| Component | Responsibility | Implementation |
-|-----------|----------------|----------------|
-| Next.js App Router | Chat UI, settings pages, SSE consumption, React state | Next.js 15, shadcn/ui, Tailwind |
-| Route Handlers (Next.js) | Auth middleware, session, optional API proxy to FastAPI | `app/api/**` routes |
-| FastAPI Routers | HTTP endpoints, request validation, response shaping | `app/routers/` |
-| Orchestrator Service | Core agent loop: model call → tool dispatch → observation → model | `app/services/orchestrator.py` |
-| ToolExecutor | Execute built-in tools (web search, code run), return results | `app/executors/tool_executor.py` |
-| McpExecutor | Connect to MCP servers, invoke tools, handle responses | `app/executors/mcp_executor.py` |
-| SkillExecutor | Run skill workflows (multi-step sequences) | `app/executors/skill_executor.py` |
-| TraceEmitter | Emit SSE events per step (tool_start, tool_end, token, etc.) | `app/services/trace_emitter.py` |
-| RunStateStore | Persist in-progress run state for resume/retry | `app/services/run_state_store.py` |
-| File Pipeline | Accept uploads, chunk, embed, store in ChromaDB + SQLite metadata | `app/services/file_pipeline.py` |
-| SQLite (SQLModel) | Persistent store: conversations, messages, traces, settings | Alembic migrations |
-| ChromaDB | Vector store: embedded chunks for retrieval | Local persistent mode |
+### 1. next.config.ts -- Serwist Wrapper
 
----
+**Current state:** Minimal config with `output: "standalone"` and `compress: false`.
 
-## Recommended Project Structure
-
-### Backend (Python / FastAPI)
-
-```
-backend/
-├── app/
-│   ├── main.py                 # FastAPI app factory, middleware, lifespan
-│   ├── config.py               # Settings from env (pydantic-settings)
-│   ├── dependencies.py         # Shared FastAPI deps (db session, auth)
-│   │
-│   ├── routers/
-│   │   ├── chat.py             # POST /chat/stream (SSE), CRUD conversations
-│   │   ├── files.py            # POST /files/upload, GET /files/{id}
-│   │   ├── settings.py         # GET/PUT settings, test-connection
-│   │   ├── health.py           # GET /health, diagnostics panel
-│   │   └── auth.py             # POST /auth/login, session
-│   │
-│   ├── models/                 # SQLModel ORM models (table=True)
-│   │   ├── conversation.py
-│   │   ├── message.py
-│   │   ├── trace.py
-│   │   ├── file_record.py
-│   │   └── settings.py
-│   │
-│   ├── schemas/                # Pydantic request/response schemas
-│   │   ├── chat.py
-│   │   ├── file.py
-│   │   └── settings.py
-│   │
-│   ├── services/
-│   │   ├── orchestrator.py     # Core agent loop (model → tools → model)
-│   │   ├── llm_client.py       # OpenAI-compat client wrapper
-│   │   ├── trace_emitter.py    # SSE event emission, trace persistence
-│   │   ├── run_state_store.py  # In-progress run state
-│   │   ├── file_pipeline.py    # Upload → chunk → embed → store
-│   │   ├── retrieval.py        # Query ChromaDB, rerank, return chunks
-│   │   └── settings_service.py
-│   │
-│   ├── executors/
-│   │   ├── tool_executor.py    # Built-in tool dispatch
-│   │   ├── mcp_executor.py     # MCP server client + tool invocation
-│   │   └── skill_executor.py   # Skill workflow runner
-│   │
-│   ├── db/
-│   │   ├── database.py         # SQLModel engine, get_session
-│   │   └── migrations/         # Alembic revisions
-│   │
-│   └── core/
-│       ├── auth.py             # Password hash, session token verify
-│       └── exceptions.py       # Domain exceptions
-│
-├── tests/
-│   ├── unit/
-│   ├── integration/
-│   └── conftest.py
-├── uploads/                    # File storage (not public/)
-├── chroma_data/                # ChromaDB persistent storage
-├── pyproject.toml
-└── alembic.ini
-```
-
-### Frontend (Next.js / TypeScript)
-
-```
-frontend/
-├── app/
-│   ├── layout.tsx              # Root layout, theme provider
-│   ├── page.tsx                # Redirect to /chat
-│   ├── (auth)/
-│   │   └── login/page.tsx      # Login page
-│   ├── chat/
-│   │   ├── layout.tsx          # Chat shell: sidebar + main area
-│   │   ├── page.tsx            # New conversation entry
-│   │   └── [id]/page.tsx       # Active conversation view
-│   ├── settings/
-│   │   ├── layout.tsx          # Settings shell with nav
-│   │   ├── providers/page.tsx  # LLM providers + models
-│   │   ├── mcp/page.tsx        # MCP server registration
-│   │   ├── skills/page.tsx     # Skill enable/disable
-│   │   ├── embeddings/page.tsx # Embedding model config
-│   │   └── health/page.tsx     # Health diagnostics panel
-│   └── api/
-│       ├── auth/[...]/route.ts # Auth endpoints
-│       └── proxy/[...]/route.ts # Optional proxy to FastAPI
-│
-├── components/
-│   ├── ui/                     # shadcn/ui primitives
-│   ├── chat/
-│   │   ├── MessageList.tsx     # Conversation message feed
-│   │   ├── MessageBubble.tsx   # Single message + trace accordion
-│   │   ├── TracePanel.tsx      # Execution trace (tool calls, MCP, skills)
-│   │   ├── ChatInput.tsx       # Composer with file attach
-│   │   └── ConversationSidebar.tsx
-│   ├── settings/
-│   │   ├── ProviderForm.tsx
-│   │   ├── McpServerCard.tsx
-│   │   └── HealthCheck.tsx
-│   └── shared/
-│       ├── MarkdownRenderer.tsx
-│       └── ThemeToggle.tsx
-│
-├── lib/
-│   ├── api.ts                  # Typed API client (fetch wrappers)
-│   ├── sse.ts                  # SSE connection manager
-│   └── auth.ts                 # Client-side auth helpers
-│
-├── hooks/
-│   ├── useChat.ts              # Chat state + SSE stream consumer
-│   ├── useConversations.ts
-│   └── useSettings.ts
-│
-├── stores/                     # Zustand state (or React Context)
-│   ├── chatStore.ts
-│   └── settingsStore.ts
-│
-└── types/
-    ├── api.ts                  # API response types
-    └── chat.ts                 # Domain types
-```
-
-### Structure Rationale
-
-- **`services/` vs `executors/`:** Services contain business workflows and orchestration. Executors are single-responsibility adapters that wrap external systems (tools, MCP servers, skills). This separation means the orchestrator can be unit-tested by mocking executors.
-- **`models/` vs `schemas/`:** SQLModel ORM models define the DB tables. Pydantic schemas define HTTP contract. Keeping them separate avoids leaking DB fields in API responses.
-- **`uploads/` outside `app/`:** Files served via controlled FastAPI endpoint, not directly from the filesystem via Next.js static serving. Prevents path traversal exposure.
-- **`hooks/` in frontend:** SSE stream state and conversation management are complex enough to warrant custom hooks. Keeps components focused on rendering.
-
----
-
-## Architectural Patterns
-
-### Pattern 1: Orchestrator Loop (Model → Tool → Model)
-
-**What:** The orchestrator runs a while-loop that sends messages to the LLM, checks whether the response contains tool calls, executes them via the appropriate executor, appends results to the message history, and repeats until the model emits a final text response.
-
-**When to use:** Any multi-step AI response where tools, MCP actions, or skills may be invoked before the final answer.
-
-**Trade-offs:** Simple to implement and debug without a framework dependency. Lacks graph-level parallelism; sequential only. Acceptable for MVP single-user workload.
-
-**Example:**
-
-```python
-# app/services/orchestrator.py
-async def run(
-    messages: list[Message],
-    config: RunConfig,
-    trace: TraceEmitter,
-) -> AsyncIterator[ServerSentEvent]:
-    history = [m.to_openai() for m in messages]
-    max_iterations = config.max_iterations or 10
-
-    for _ in range(max_iterations):
-        # 1. Call LLM (streaming tokens to client via trace)
-        response = await llm_client.complete(history, tools=config.tools)
-        await trace.emit_token_stream(response.stream)
-
-        item = response.first_item
-
-        if item.type == "tool_call":
-            # 2. Dispatch to appropriate executor
-            await trace.emit(TraceEvent(type="tool_start", name=item.name))
-            result = await dispatch_tool(item, config)
-            await trace.emit(TraceEvent(type="tool_end", name=item.name, result=result))
-
-            # 3. Feed result back into history
-            history.append(item.to_openai())
-            history.append({"role": "tool", "content": result, "tool_call_id": item.id})
-
-        else:
-            # 4. Final text response — exit loop
-            await trace.persist()
-            return
-
-    await trace.emit(TraceEvent(type="error", message="max iterations reached"))
-```
-
-### Pattern 2: SSE Multiplexed Event Stream
-
-**What:** A single SSE connection carries multiple named event types over the life of one orchestrator run: token deltas, trace events (tool_start, tool_end, mcp_call, skill_start), and control events (run_complete, run_error).
-
-**When to use:** Any streaming AI response that needs concurrent token output and execution visibility in the frontend.
-
-**Trade-offs:** One connection per chat turn (not persistent). Reconnect via `Last-Event-ID` for reliability. No WebSocket needed for this unidirectional flow.
-
-**Example:**
-
-```python
-# SSE event types sent on single stream
-{"event": "token",      "data": {"delta": "Hello"}}
-{"event": "tool_start", "data": {"name": "web_search", "input": {...}}}
-{"event": "tool_end",   "data": {"name": "web_search", "output": "..."}}
-{"event": "mcp_call",   "data": {"server": "filesystem", "tool": "read_file"}}
-{"event": "skill_start","data": {"skill": "code_review"}}
-{"event": "run_done",   "data": {"message_id": "msg_123"}}
-{"event": "run_error",  "data": {"error": "timeout"}}
-```
+**Change:** Wrap with `withSerwist` from `@serwist/next`. The `output: "standalone"` and `compress: false` settings are preserved inside the wrapped config.
 
 ```typescript
-// hooks/useChat.ts — frontend SSE consumer
-function consumeStream(url: string, onEvent: (e: SSEEvent) => void) {
-  const es = new EventSource(url);
-  es.addEventListener("token", e => onEvent({ type: "token", data: JSON.parse(e.data) }));
-  es.addEventListener("tool_start", e => onEvent({ type: "tool_start", ...JSON.parse(e.data) }));
-  es.addEventListener("run_done", e => { onEvent({ type: "done" }); es.close(); });
-  es.addEventListener("run_error", e => { onEvent({ type: "error" }); es.close(); });
+import withSerwistInit from "@serwist/next";
+
+const withSerwist = withSerwistInit({
+  swSrc: "src/app/sw.ts",
+  swDest: "public/sw.js",
+  additionalPrecacheEntries: [{ url: "/~offline", revision: "initial" }],
+});
+
+export default withSerwist({
+  output: "standalone",
+  compress: false,
+});
+```
+
+**Risk:** LOW. Serwist wraps the config non-destructively. The `compress: false` for SSE streaming is preserved.
+
+### 2. app/layout.tsx -- Metadata + Viewport
+
+**Current state:** Exports `metadata` with title/description. No viewport export.
+
+**Change:** Add `viewport` export for `themeColor`. Add `applicationName` and `appleWebApp` to metadata. Next.js automatically links the manifest when `app/manifest.ts` exists.
+
+```typescript
+export const viewport: Viewport = {
+  themeColor: [
+    { media: "(prefers-color-scheme: light)", color: "#ffffff" },
+    { media: "(prefers-color-scheme: dark)", color: "#0a0a0a" },
+  ],
+};
+
+export const metadata: Metadata = {
+  title: "Forge",
+  description: "AI interaction platform",
+  applicationName: "Forge",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "default",
+    title: "Forge",
+  },
+};
+```
+
+**Risk:** LOW. Additive metadata changes only.
+
+### 3. tsconfig.json -- Type Additions
+
+**Current state:** `lib: ["dom", "dom.iterable", "esnext"]`, `types: ["vitest/globals"]`.
+
+**Change:** Add `"webworker"` to `lib`, add `"@serwist/next/typings"` to `types`, add `"public/sw.js"` to `exclude`.
+
+**Risk:** LOW. The `webworker` lib adds ServiceWorker types to global scope. No conflicts with existing DOM types.
+
+### 4. Service Worker (sw.ts) -- NEW File
+
+**Location:** `src/app/sw.ts` (compiled to `public/sw.js` by Serwist).
+
+**Caching strategy for Forge:**
+
+| Resource Type | Strategy | Rationale |
+|---------------|----------|-----------|
+| App shell (HTML, JS, CSS) | Precache + stale-while-revalidate | Instant load, background update |
+| Static assets (icons, fonts) | Cache-first, 30-day expiry | Rarely change |
+| API calls to FastAPI (`/api/*`) | Network-only | Chat data must be fresh; SSE cannot be cached |
+| Login page | Network-only | Auth must hit server |
+| Offline fallback | Precached | Shown when network unavailable |
+
+**Critical:** SSE streaming (`/api/v1/chat/stream`) must NOT be intercepted by the service worker. The `defaultCache` from `@serwist/next/worker` handles Next.js assets correctly. Custom rules are needed only to exclude the FastAPI proxy routes.
+
+```typescript
+import { defaultCache } from "@serwist/next/worker";
+import type { PrecacheEntry, SerwistGlobalConfig } from "serwist";
+import { Serwist } from "serwist";
+
+declare global {
+  interface WorkerGlobalScope extends SerwistGlobalConfig {
+    __SW_MANIFEST: (PrecacheEntry | string)[] | undefined;
+  }
+}
+
+declare const self: ServiceWorkerGlobalScope;
+
+const serwist = new Serwist({
+  precacheEntries: self.__SW_MANIFEST,
+  skipWaiting: true,
+  clientsClaim: true,
+  navigationPreload: true,
+  runtimeCaching: [
+    // API routes must never be cached -- SSE streaming, auth, fresh data
+    {
+      urlPattern: /\/api\/.*/,
+      handler: "NetworkOnly",
+    },
+    ...defaultCache,
+  ],
+  fallbacks: {
+    entries: [{
+      url: "/~offline",
+      matcher: ({ request }) => request.destination === "document",
+    }],
+  },
+});
+
+serwist.addEventListeners();
+```
+
+### 5. Web App Manifest (manifest.ts) -- NEW File
+
+**Location:** `src/app/manifest.ts` (dynamic, TypeScript).
+
+Use dynamic manifest (not static JSON) because Forge supports light/dark themes and the manifest can adapt `theme_color` based on deployment context. Next.js has built-in support for `app/manifest.ts` -- it auto-generates the `<link rel="manifest">` tag.
+
+```typescript
+import type { MetadataRoute } from "next";
+
+export default function manifest(): MetadataRoute.Manifest {
+  return {
+    name: "Forge",
+    short_name: "Forge",
+    description: "Local-first AI assistant",
+    start_url: "/chat",
+    display: "standalone",
+    background_color: "#0a0a0a",
+    theme_color: "#0a0a0a",
+    icons: [
+      { src: "/icon-192x192.png", sizes: "192x192", type: "image/png" },
+      { src: "/icon-512x512.png", sizes: "512x512", type: "image/png" },
+      { src: "/icon-512x512.png", sizes: "512x512", type: "image/png", purpose: "maskable" },
+    ],
+  };
 }
 ```
 
-### Pattern 3: File Upload → Chunk → Embed → Retrieve Pipeline
+**Note:** `start_url: "/chat"` because the root `/` just redirects to `/chat` anyway.
 
-**What:** Files are uploaded to `./uploads/`, metadata written to SQLite, content chunked and embedded, then stored in ChromaDB. At inference time, the user query is embedded and ChromaDB returns top-K similar chunks, which are injected into the LLM context.
+### 6. Offline Fallback Page -- NEW File
 
-**When to use:** Any message where document context is needed (RAG).
+**Location:** `src/app/~offline/page.tsx`
 
-**Trade-offs:** SQLite holds file metadata and chunk associations; ChromaDB holds the vectors. Separating them allows richer filtering (by file, by conversation) before vector similarity. Reranking is optional but improves precision.
+Simple static page shown when user navigates while offline. Should match Forge's visual style (dark background, centered content). Does NOT need to be a "use client" component -- can be a plain server component for minimal bundle size. The `~offline` path convention is used by Serwist.
 
-**Example:**
+### 7. Responsive Layout Modifications -- EXISTING Files
+
+These are the files that need responsive breakpoints added:
+
+#### 7a. Chat Layout (sidebar to drawer)
+
+**File:** `src/app/(protected)/chat/layout.tsx`
+**Current:** Fixed `w-64` sidebar always visible. No responsive classes at all.
+**Change:** Hide sidebar on mobile, show as overlay/drawer triggered by a menu button.
 
 ```
-POST /files/upload
-    ↓
-FilePipeline.process(file_bytes, mime_type)
-    ↓
-chunk_document(text)      → [chunk_0, chunk_1, ..., chunk_N]
-    ↓
-embed_chunks(chunks)      → [vector_0, ..., vector_N]
-    ↓
-chromadb.add(ids, embeddings, documents, metadata)
-    ↓
-SQLite: FileRecord(id, name, path, chunk_count, collection_id)
-    ↓
-Return: file_id to frontend
-
--- At chat time --
-user_query → embed → chromadb.query(top_k=5)
-    ↓
-[chunk_0, chunk_2, chunk_4]  (+ SQLite metadata for source display)
-    ↓
-injected into LLM system prompt as [CONTEXT]
+Desktop (md+):  [sidebar w-64] [chat area flex-1]
+Mobile (<md):   [chat area full-width] + [drawer overlay triggered by button]
 ```
 
-### Pattern 4: Executor Interface (Adapter Pattern)
+**Implementation approach:** Use a `useSidebar` context/hook to manage open/close state. On `md+` breakpoints, sidebar is always visible via CSS (`hidden md:block`). Below `md`, it renders inside a shadcn Sheet component (which uses the Vaul drawer under the hood). The ConversationList component is shared between both views -- just wrapped differently.
 
-**What:** Each external system (built-in tools, MCP servers, skills) is wrapped behind a common executor interface. The orchestrator calls `executor.invoke(name, input)` without knowing which system handles it.
+#### 7b. App Header (responsive nav)
 
-**When to use:** Whenever you add a new tool type. Keeps orchestrator logic stable as capabilities grow.
+**File:** `src/components/layout/app-header.tsx`
+**Current:** Horizontal nav with icon+label links, always visible. Fixed height `h-12`.
+**Change:** On mobile, collapse nav labels behind icons only, or use a hamburger menu. Add the sidebar toggle button (for chat drawer) on mobile.
 
-**Trade-offs:** Adds one indirection layer. Worth the cost because it makes unit testing the orchestrator trivial (mock all executors).
+**Recommendation:** Keep the top header on mobile but simplify: show "Forge" + hamburger (for sidebar) on left, icon-only nav in center, logout icon on right. The hamburger only appears on chat pages (where sidebar exists).
 
-```python
-# Consistent interface across all executor types
-class BaseExecutor(ABC):
-    async def invoke(self, name: str, input: dict) -> str: ...
-    async def list_tools(self) -> list[ToolDefinition]: ...
+#### 7c. Settings Layout
 
-class ToolExecutor(BaseExecutor): ...    # built-ins
-class McpExecutor(BaseExecutor): ...     # MCP servers
-class SkillExecutor(BaseExecutor): ...   # multi-step skills
-```
+**File:** `src/app/(protected)/settings/layout.tsx`
+**Current:** `max-w-4xl mx-auto px-4 py-8`.
+**Change:** Reduce padding on mobile (`px-2 py-4 md:px-4 md:py-8`). Already reasonably responsive since it uses `w-full max-w-4xl`.
 
----
+#### 7d. Message Bubbles
+
+**File:** `src/components/chat/MessageBubble.tsx`
+**Current:** `max-w-[80%]` on messages.
+**Change:** Increase to `max-w-[95%] md:max-w-[80%]` on mobile for better space usage.
+
+### 8. Install Prompt UX -- NEW Component
+
+**Location:** `src/components/pwa/InstallPrompt.tsx`
+
+A "use client" component that:
+1. Listens for `beforeinstallprompt` event (Chrome/Edge)
+2. Detects iOS and shows manual install instructions
+3. Detects standalone mode (`display-mode: standalone` media query) and hides prompt if already installed
+4. Renders as a dismissible banner in the app header or as a toast notification
+
+### 9. Service Worker Registration -- NEW Component
+
+**Location:** `src/components/pwa/ServiceWorkerRegistration.tsx`
+
+A "use client" component mounted in `providers.tsx` that:
+1. Registers `/sw.js` on mount (checks `"serviceWorker" in navigator` first)
+2. Handles update notifications (new version available)
+3. No visual UI normally -- only shows a toast/banner when an update is available
+
+### 10. Docker Build -- EXISTING File
+
+**File:** `frontend/Dockerfile`
+**Current:** Copies `public/` directory in the runner stage.
+**Change:** The generated `public/sw.js` is created during `npm run build` (Stage 2), so it is already included in `COPY --from=build /app/public ./public`. No Dockerfile changes needed.
+
+## Component Responsibilities
+
+| Component | Type | Responsibility |
+|-----------|------|----------------|
+| `manifest.ts` | New file | PWA metadata, icons, display mode |
+| `sw.ts` | New file | Service worker source with caching strategies |
+| `~offline/page.tsx` | New page | Offline fallback page |
+| `InstallPrompt.tsx` | New component | Install UX for desktop/mobile |
+| `ServiceWorkerRegistration.tsx` | New component | SW registration + update notifications |
+| `useSidebar` hook | New hook | Sidebar open/close state management |
+| `chat/layout.tsx` | Modified | Responsive sidebar/drawer |
+| `app-header.tsx` | Modified | Responsive nav (hamburger + sidebar toggle) |
+| `settings/layout.tsx` | Modified | Mobile padding adjustments |
+| `MessageBubble.tsx` | Modified | Mobile-friendly max-width |
+| `layout.tsx` (root) | Modified | Viewport + manifest metadata |
+| `next.config.ts` | Modified | Serwist wrapper |
+| `tsconfig.json` | Modified | WebWorker types |
+| `.gitignore` | Modified | Exclude generated SW files |
+| `package.json` | Modified | Add dev:pwa script |
 
 ## Data Flow
 
-### Streaming Chat Turn
+### Service Worker Lifecycle
 
 ```
-User types message → ChatInput
-    ↓
-POST /api/chat  (Next.js Route Handler or direct to FastAPI)
-    ↓
-FastAPI: create Message record (SQLite), start orchestrator run
-    ↓
-Orchestrator loop begins → SSE stream opened (EventSourceResponse)
-    ↓
-For each iteration:
-    LLM call → stream token events → frontend appends to MessageBubble
-    Tool call detected → emit tool_start → execute → emit tool_end
-    Result appended to history → next iteration
-    ↓
-Final text response → emit run_done
-    ↓
-FastAPI: persist final Message + Trace to SQLite
-    ↓
-Frontend: SSE connection closes, TracePanel populated from events
+Build time:
+  Serwist plugin --> reads sw.ts --> generates public/sw.js with precache manifest
+
+Runtime (browser):
+  Page load --> ServiceWorkerRegistration component --> navigator.serviceWorker.register("/sw.js")
+       |
+       v
+  SW activates --> precaches app shell (HTML, JS, CSS bundles)
+       |
+       v
+  Navigation request --> SW intercepts
+       |
+       +-- /api/* request? --> NetworkOnly (pass through, never cache)
+       +-- Cached asset? --> serve from cache (stale-while-revalidate)
+       +-- Offline + document? --> serve /~offline fallback
+       +-- Offline + non-document? --> network error (standard behavior)
 ```
 
-### Conversation Resume Flow
+### Install Prompt Flow
 
 ```
-User opens existing conversation
-    ↓
-GET /conversations/{id}  →  SQLite: messages + traces
-    ↓
-Frontend renders MessageList with all messages
-    ↓
-For each message: TracePanel hydrated from persisted trace JSON
-    ↓
-User sends new message → streaming chat turn resumes
+Browser detects valid manifest + registered service worker
+       |
+       v
+  Chrome/Edge: fires "beforeinstallprompt" event
+       |                           |
+       v                           v
+  InstallPrompt component    iOS: detect via userAgent
+  captures event, shows         show manual instructions
+  "Install Forge" button          (Share > Add to Home Screen)
+       |
+       v
+  User clicks --> event.prompt() --> browser install dialog
+       |
+       v
+  On install: "appinstalled" event --> hide install prompt
 ```
 
-### File Retrieval at Chat Time
+### Responsive Layout State
 
 ```
-User sends message (with uploaded files in scope)
-    ↓
-Orchestrator: embed user query
-    ↓
-ChromaDB.query(query_embedding, collection=conversation_files, n=5)
-    ↓
-SQLite: resolve chunk → FileRecord (filename, page, section)
-    ↓
-Context block prepended to LLM system prompt
-    ↓
-LLM response cites [Source: filename.pdf, chunk 3]
-    ↓
-Frontend: source attribution visible in message
+Window resize / initial load
+       |
+       v
+  CSS breakpoint (md: 768px)
+       |
+       +-- >= 768px: sidebar always visible (CSS only, no JS state)
+       +-- < 768px: sidebar hidden by CSS
+                     hamburger button in AppHeader toggles useSidebar state
+                     Sheet/Drawer overlay renders ConversationList
+                     backdrop click or navigation closes drawer
 ```
 
-### Settings → Health Check
+## Architectural Patterns
 
-```
-User configures LLM provider (base_url + api_key + model)
-    ↓
-PUT /settings/providers/{id}  →  SQLite: ProviderConfig
-    ↓
-POST /settings/providers/{id}/test
-    ↓
-FastAPI: send minimal request to provider endpoint
-    ↓
-Return: {status: ok/error, latency_ms, model_list}
-    ↓
-Health panel displays live status
-```
+### Pattern 1: Serwist Build-Time Integration
 
----
+**What:** Serwist processes `sw.ts` at build time, injecting a precache manifest of all Next.js build artifacts. The service worker file lives in `src/app/sw.ts` but compiles to `public/sw.js`.
 
-## Database Schema Patterns
+**When to use:** Always -- this is the standard approach for Next.js PWA with Serwist.
 
-### Core Tables (SQLite via SQLModel)
+**Trade-offs:**
+- Pro: Automatic precache manifest generation, type-safe service worker
+- Pro: Works with Next.js standalone output mode
+- Con: Requires `--webpack` flag for local dev testing (`next dev --webpack`)
+- Con: Generated `sw.js` must be gitignored
 
-```
-conversations
-  id          TEXT  PK  (uuid)
-  title       TEXT
-  created_at  DATETIME
-  updated_at  DATETIME
+### Pattern 2: Network-Only for API Routes
 
-messages
-  id              TEXT  PK  (uuid)
-  conversation_id TEXT  FK → conversations.id
-  role            TEXT  (user | assistant | system | tool)
-  content         TEXT
-  model           TEXT  (model used to generate)
-  created_at      DATETIME
+**What:** Explicitly exclude all `/api/*` routes from service worker caching. Forge proxies requests to FastAPI backend -- these must always hit the network.
 
-traces
-  id          TEXT  PK  (uuid)
-  message_id  TEXT  FK → messages.id
-  events      TEXT  (JSON array of SSE event payloads)
-  created_at  DATETIME
+**When to use:** Any PWA with a separate API backend or SSE streaming.
 
-file_records
-  id              TEXT  PK  (uuid)
-  conversation_id TEXT  FK → conversations.id  (nullable — global upload)
-  filename        TEXT
-  mime_type       TEXT
-  storage_path    TEXT  (./uploads/{id}.ext)
-  chunk_count     INT
-  collection_id   TEXT  (ChromaDB collection name)
-  created_at      DATETIME
+**Trade-offs:**
+- Pro: Prevents stale API responses, SSE streaming works correctly
+- Pro: Auth tokens always validated server-side
+- Con: API calls fail immediately when offline (desired behavior -- show offline UI instead)
 
-settings (key-value or typed rows)
-  id          TEXT  PK
-  category    TEXT  (provider | embedding | mcp | skill | reranker)
-  key         TEXT
-  value       TEXT  (JSON)
-  updated_at  DATETIME
-```
+### Pattern 3: CSS-First Responsive with JS Drawer Fallback
 
-### ChromaDB Collections
+**What:** Use Tailwind breakpoints (`hidden md:block`, `md:hidden`) for layout shifts. Only use JavaScript state (`useSidebar` hook) for the mobile drawer open/close toggle.
 
-```
-collections:
-  "forge_files"          — all uploaded file chunks
-  "forge_conv_{id}"      — conversation-scoped file chunks (optional)
+**When to use:** When the responsive change is primarily layout (show/hide sidebar) with a small interactive component (drawer toggle).
 
-document metadata per chunk:
-  file_id, filename, chunk_index, char_start, char_end, mime_type
-```
+**Trade-offs:**
+- Pro: No layout shift on desktop, no unnecessary JS hydration
+- Pro: SSR renders correctly for any viewport -- no hydration mismatch
+- Con: Mobile drawer needs client-side state management (but this is minimal)
 
----
+### Pattern 4: Dynamic Manifest over Static JSON
 
-## Build Order (Phase Implications)
+**What:** Use `app/manifest.ts` (TypeScript function) instead of `public/manifest.json`. Next.js auto-generates `<link rel="manifest">` and serves at `/manifest.webmanifest`.
 
-The component dependency graph dictates this build sequence:
+**When to use:** Always in Next.js App Router projects. Especially when you need type safety or environment-variable-driven values.
 
-```
-1. Infrastructure
-   SQLite models + Alembic + FastAPI skeleton + Next.js shell
-   (everything else depends on this)
-
-2. Auth + Session
-   Single-user password auth, session token
-   (gates all API endpoints)
-
-3. Basic Chat (no tools)
-   Conversation CRUD, message persistence, LLM streaming via SSE
-   (core value; validates SSE pattern early)
-
-4. Execution Trace
-   TraceEmitter, SSE event types, trace persistence, TracePanel UI
-   (build alongside tools — shared infrastructure)
-
-5. Tool/MCP Integration
-   Orchestrator loop, ToolExecutor, McpExecutor, MCP settings UI
-   (depends on 3 + 4)
-
-6. Skills
-   SkillExecutor, skill configuration UI
-   (depends on 5 — reuses executor pattern)
-
-7. File Upload + RAG
-   FilePipeline, ChromaDB, retrieval, source attribution UI
-   (independent track, can start after 3)
-
-8. Settings + Health Panel
-   All settings pages, test-connection endpoints, diagnostics
-   (can be built incrementally alongside 4-7)
-
-9. Quality / Polish
-   Test coverage, export, theme, retry/regenerate
-   (final pass)
-```
-
----
-
-## Integration Points
-
-### External Services
-
-| Service | Integration Pattern | Notes |
-|---------|---------------------|-------|
-| OpenAI-compat LLM (Ollama, LM Studio, vLLM) | HTTP client (httpx async) with streaming | Use `stream=True`, handle SSE from provider |
-| MCP Servers | MCP Python SDK client | Each server is a subprocess or network socket; tools discovered at connect time |
-| Web Search API (Brave, etc.) | REST HTTP (httpx) | Wrapped in ToolExecutor; provider swappable via settings |
-| ChromaDB | Python client (`chromadb`) | Local persistent mode; no separate server needed for MVP |
-
-### Internal Boundaries
-
-| Boundary | Communication | Notes |
-|----------|---------------|-------|
-| Next.js UI ↔ FastAPI | HTTP REST + SSE | Direct fetch to FastAPI; or proxied through Next.js Route Handler |
-| Orchestrator ↔ Executors | Async Python function calls | Executors return `str` result; orchestrator does not know the source |
-| Orchestrator ↔ TraceEmitter | Async generator / callback | TraceEmitter both emits SSE and batches events for persistence |
-| FastAPI ↔ SQLite | SQLModel sessions via dependency injection | One session per request; async sessions for streaming endpoints |
-| FastAPI ↔ ChromaDB | ChromaDB Python client | Instantiated at app startup; collection references cached |
-| File Router ↔ FilePipeline | Service layer call | Router validates, delegates to pipeline, returns file_id |
-
----
+**Trade-offs:**
+- Pro: TypeScript types prevent manifest errors
+- Pro: Can access env vars for per-environment customization
+- Pro: Next.js handles linking automatically
+- Con: None -- strictly superior to static JSON in App Router
 
 ## Anti-Patterns
 
-### Anti-Pattern 1: Streaming Through Next.js Route Handler
+### Anti-Pattern 1: Caching SSE/Streaming Responses
 
-**What people do:** Route all FastAPI SSE through a Next.js API route handler, treating it as a universal proxy.
+**What people do:** Use a broad `CacheFirst` or `StaleWhileRevalidate` strategy that accidentally matches `/api/v1/chat/stream`.
+**Why it's wrong:** SSE responses are long-lived streams. Caching them breaks streaming entirely -- the service worker tries to serve a partial/stale response. This is especially dangerous because Forge's core value is streaming chat.
+**Do this instead:** Put a `NetworkOnly` rule for `/api/*` BEFORE the default cache rules so it matches first. Order matters in Serwist's `runtimeCaching` array.
 
-**Why it's wrong:** Next.js Route Handlers buffer responses in some deployment modes (especially Vercel edge). This destroys the streaming behavior for SSE and adds latency. The Next.js middleware layer is not designed to faithfully proxy long-lived streaming connections.
+### Anti-Pattern 2: Using next-pwa Instead of Serwist
 
-**Do this instead:** Have the browser connect to FastAPI directly for the streaming chat endpoint. Use `next.config.js` rewrites for non-streaming API calls. Keep the SSE connection direct: `browser → FastAPI /chat/stream`.
+**What people do:** Install `next-pwa` because it appears in older tutorials.
+**Why it's wrong:** `next-pwa` is abandoned (last release 2022), requires webpack, does not work with Turbopack (Next.js 16 default). It has known security vulnerabilities.
+**Do this instead:** Use `@serwist/next` + `serwist`. It is the maintained successor with Turbopack awareness.
 
-### Anti-Pattern 2: Storing Traces as Normalized Rows
+### Anti-Pattern 3: Putting manifest.json in public/
 
-**What people do:** Create a `trace_events` table with one row per event, FKed to the message.
+**What people do:** Create a static `public/manifest.json` file.
+**Why it's wrong:** Misses Next.js's built-in manifest support. A static file cannot use TypeScript types. Next.js does not automatically add `<link rel="manifest">` for files in public/.
+**Do this instead:** Create `app/manifest.ts` exporting a function. Next.js handles everything automatically.
 
-**Why it's wrong:** Traces are append-only, always read as a complete set, and never queried individually. Normalizing them adds JOIN overhead with zero benefit for this access pattern.
+### Anti-Pattern 4: JavaScript-Driven Responsive Layout
 
-**Do this instead:** Store the full trace as a JSON array in a single `traces.events` TEXT column, serialized at run completion. Fast reads, simple schema.
+**What people do:** Use `window.innerWidth` checks and state to conditionally render sidebar vs drawer.
+**Why it's wrong:** Causes hydration mismatches (server renders one layout, client renders another). Layout shift on initial load. React strict mode will flag it.
+**Do this instead:** Use CSS breakpoints for show/hide. Only use JS for interactive state (drawer open/close toggle). Both the desktop sidebar and mobile drawer can render in the DOM simultaneously -- CSS controls visibility.
 
-### Anti-Pattern 3: One ChromaDB Collection Per Conversation
+### Anti-Pattern 5: Registering Service Worker in Root Layout
 
-**What people do:** Create a new ChromaDB collection for each conversation to scope retrieval.
+**What people do:** Add `navigator.serviceWorker.register()` directly in root `layout.tsx` or in a `<script>` tag.
+**Why it's wrong:** Root layout is a server component. Client-side APIs are not available. Even if wrapped in "use client", mixing SW registration with layout logic couples concerns.
+**Do this instead:** Create a dedicated `ServiceWorkerRegistration` component, mount it inside `providers.tsx`. Keeps SW lifecycle management isolated and testable.
 
-**Why it's wrong:** ChromaDB has overhead per collection. At dozens of conversations with uploaded files, collection proliferation degrades performance and complicates cleanup.
+## Turbopack Compatibility
 
-**Do this instead:** Use one shared collection (`forge_files`) with metadata filtering on `file_id` or `conversation_id`. ChromaDB's `where` clause handles scoping efficiently.
+**Critical detail for development workflow:**
 
-### Anti-Pattern 4: Orchestrator Calling Executors Directly by Name
+Serwist does NOT generate the service worker during `next dev` with Turbopack (the Next.js 16 default). This means:
 
-**What people do:** `if tool_name == "web_search": await web_search(...)` inside the orchestrator.
+- Normal `next dev` works fine for all non-PWA development -- no service worker, standard dev experience
+- To test PWA features locally: `next dev --webpack --experimental-https`
+- Production builds (`next build`) always work correctly regardless of dev bundler
+- Add `SERWIST_SUPPRESS_TURBOPACK_WARNING=1` to `.env` to silence the dev warning
 
-**Why it's wrong:** Every new tool requires modifying the orchestrator. The orchestrator becomes a dispatch table that grows without bound, is hard to test, and mixes concerns.
+**Recommendation:** Add two npm scripts:
+```json
+{
+  "dev": "next dev --hostname 0.0.0.0",
+  "dev:pwa": "next dev --hostname 0.0.0.0 --webpack --experimental-https"
+}
+```
 
-**Do this instead:** Register executors at startup. Orchestrator calls `executor_registry.invoke(tool_name, input)`. New tools register themselves without touching the loop.
+Most development uses the fast Turbopack dev server. Switch to `dev:pwa` only when actively testing service worker or install prompt behavior.
 
-### Anti-Pattern 5: Blocking Embedding During Chat
+## Suggested Build Order
 
-**What people do:** Embed and store file chunks inline during the chat turn (blocking the SSE stream).
+Based on dependency analysis between new/modified components:
 
-**Why it's wrong:** Embedding large files takes seconds. Blocking the chat stream for embedding makes the interface feel broken.
+```
+Phase 1: PWA Foundation (no visual changes, no user-facing behavior change)
+  1. Install @serwist/next + serwist
+  2. Modify next.config.ts (Serwist wrapper)
+  3. Modify tsconfig.json (webworker types)
+  4. Update .gitignore (public/sw*)
+  5. Create sw.ts with caching strategies (NetworkOnly for /api/*)
+  6. Create manifest.ts (dynamic, TypeScript)
+  7. Update root layout.tsx metadata/viewport exports
+  8. Generate and add PWA icons to public/ (192x192, 512x512)
+  9. Create /~offline page (simple, matches Forge visual style)
+  10. Add dev:pwa script to package.json
+      --> TEST: production build succeeds, manifest served at /manifest.webmanifest,
+               SW registers in browser, Lighthouse PWA audit passes
 
-**Do this instead:** Upload and embed files asynchronously (background task or pre-chat upload endpoint). File is available for retrieval by the time the user sends their first message about it.
+Phase 2: Install UX (small new components)
+  11. Create ServiceWorkerRegistration component
+  12. Mount in providers.tsx
+  13. Create InstallPrompt component (beforeinstallprompt + iOS detection)
+  14. Integrate install prompt into app (banner or toast)
+      --> TEST: install prompt appears in Chrome, SW registers, offline
+               fallback works, SSE streaming still works with SW active
 
----
+Phase 3: Responsive Layout (modify existing components)
+  15. Create useSidebar hook/context
+  16. Modify chat/layout.tsx (sidebar hidden on mobile, Sheet drawer)
+  17. Modify app-header.tsx (hamburger toggle on mobile, responsive nav)
+  18. Adjust settings/layout.tsx for mobile padding
+  19. Adjust MessageBubble.tsx max-width for mobile
+  20. Touch interactions: swipe-to-close on drawer, tap targets >= 44px
+      --> TEST: all pages usable at 375px width, sidebar drawer toggles,
+               no horizontal scroll, touch targets accessible
+```
 
-## Scaling Considerations
+**Rationale for this order:**
+- Phase 1 has zero visual impact on existing users -- safe to ship incrementally
+- Phase 2 depends on Phase 1 (SW must exist before registration component works)
+- Phase 3 is independent of Phases 1-2 (responsive layout does not require SW) but benefits from testing on an installed PWA to verify standalone display mode
+- Each phase is independently testable and deployable
+- Phase 1 is the riskiest (config changes to next.config.ts, build pipeline) -- do it first to surface issues early
 
-This is a local-first, single-user tool. Scaling is not a priority, but these are the first things that would need attention if it were:
+## New File Structure Summary
 
-| Scale | Architecture Adjustments |
-|-------|--------------------------|
-| 1 user (target) | Everything as described. SQLite is fine. ChromaDB local mode. |
-| 5-10 users (team) | Add connection pooling for SQLite (or migrate to PostgreSQL). Add Redis for run state if concurrency spikes. |
-| 100+ users | Replace SQLite with PostgreSQL. ChromaDB client-server mode. Separate embedding workers. Background job queue (Celery/ARQ). |
-
-### Scaling Priorities
-
-1. **First bottleneck:** SQLite write-locking under concurrent streaming requests. Fix: migrate to PostgreSQL or use WAL mode + async SQLAlchemy.
-2. **Second bottleneck:** Embedding throughput. Fix: dedicated embedding worker process consuming an async queue.
-
----
+```
+frontend/
+  src/
+    app/
+      manifest.ts                          # NEW - PWA manifest
+      sw.ts                                # NEW - service worker source
+      ~offline/
+        page.tsx                           # NEW - offline fallback
+    components/
+      pwa/
+        InstallPrompt.tsx                  # NEW - install prompt UX
+        ServiceWorkerRegistration.tsx       # NEW - SW lifecycle
+    hooks/
+      useSidebar.ts                        # NEW - sidebar state
+  public/
+    icon-192x192.png                       # NEW - PWA icon
+    icon-512x512.png                       # NEW - PWA icon
+    apple-touch-icon.png                   # NEW - iOS icon
+```
 
 ## Sources
 
-- [FastAPI SSE (EventSourceResponse) — Official Docs](https://fastapi.tiangolo.com/tutorial/server-sent-events/)
-- [Streaming APIs with FastAPI and Next.js — Sahan Serasinghe](https://sahansera.dev/streaming-apis-python-nextjs-part1/)
-- [Streaming AI Agents Responses with SSE — DEV Community](https://dev.to/sahan/streaming-apis-with-fastapi-and-nextjs-part-1-3ndj)
-- [AI SDK UI Stream Protocols — ai-sdk.dev](https://ai-sdk.dev/docs/ai-sdk-ui/stream-protocol)
-- [Agentic Loop with Tool Calling — Temporal Docs](https://docs.temporal.io/ai-cookbook/agentic-loop-tool-call-openai-python)
-- [Agentic AI Architecture Patterns — Speakeasy](https://www.speakeasy.com/mcp/ai-agents/architecture-patterns)
-- [MCP Clients + LLMs Orchestration Patterns — Medium](https://medium.com/@christoph.j.weisser28/%EF%B8%8F-mcp-clients-llms-orchestrator-agents-full-plan-and-step-by-step-orchestation-patterns-07af7dc0bce0)
-- [ChromaDB Concepts — Chroma Cookbook](https://cookbook.chromadb.dev/core/concepts/)
-- [Enhancing RAG with ChromaDB and SQLite — Medium](https://medium.com/@dassandipan9080/enhancing-retrieval-augmented-generation-with-chromadb-and-sqlite-c499109f8082)
-- [FastAPI Project Structure Best Practices — zhanymkanov/fastapi-best-practices](https://github.com/zhanymkanov/fastapi-best-practices)
-- [Next.js App Router Best Practices 2025 — Medium](https://medium.com/better-dev-nextjs-react/inside-the-app-router-best-practices-for-next-js-file-and-directory-structure-2025-edition-ed6bc14a8da3)
-- [Next.js Backend for Frontend Guide](https://nextjs.org/docs/app/guides/backend-for-frontend)
+- [Next.js PWA Guide (official, v16.2.1)](https://nextjs.org/docs/app/guides/progressive-web-apps) -- PRIMARY, HIGH confidence
+- [Serwist Getting Started (@serwist/next)](https://serwist.pages.dev/docs/next/getting-started) -- PRIMARY, HIGH confidence
+- [Serwist Turbopack support discussion](https://github.com/serwist/serwist/issues/54) -- Turbopack compatibility details
+- [Next.js 16 + Serwist (Aurora Scharff)](https://aurorascharff.no/posts/dynamically-generating-pwa-app-icons-nextjs-16-serwist/) -- Next.js 16 specific integration, MEDIUM confidence
+- [@serwist/turbopack npm package](https://www.npmjs.com/package/@serwist/turbopack) -- Alternative Turbopack integration path
+- [shadcn/ui Drawer (Vaul)](https://www.shadcn.io/ui/drawer) -- Mobile drawer component reference
 
 ---
-*Architecture research for: local-first AI assistant (Forge)*
-*Researched: 2026-03-21*
+*Architecture research for: PWA integration with Forge (Next.js 16 App Router)*
+*Researched: 2026-03-22*
