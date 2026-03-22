@@ -72,9 +72,9 @@ Requirements for initial release. Each maps to roadmap phases.
 - [x] **SET-01**: User can configure LLM providers with multiple profiles (base URL, API key, models)
 - [x] **SET-02**: User can configure embedding model endpoint
 - [x] **SET-03**: User can configure reranker endpoint
-- [ ] **SET-04**: User can configure web search providers (SearXNG, Exa)
+- [x] **SET-04**: User can configure web search providers (SearXNG, Exa)
 - [x] **SET-05**: User can test-connection for any configured endpoint
-- [ ] **SET-06**: Health diagnostics panel shows status of all configured integrations
+- [x] **SET-06**: Health diagnostics panel shows status of all configured integrations
 - [x] **SET-07**: User can adjust model parameters (temperature, max tokens) per conversation or globally
 
 ### Theme & Export
@@ -84,9 +84,9 @@ Requirements for initial release. Each maps to roadmap phases.
 
 ### Testing & Quality
 
-- [ ] **TEST-01**: Every shipped feature includes corresponding tests at the appropriate layer
-- [ ] **TEST-02**: E2E tests cover: auth, chat streaming, tool trace rendering, settings persistence
-- [ ] **TEST-03**: Streaming tests verify ordered delivery, interruption handling, and trace integrity
+- [x] **TEST-01**: Every shipped feature includes corresponding tests at the appropriate layer
+- [x] **TEST-02**: E2E tests cover: auth, chat streaming, tool trace rendering, settings persistence
+- [x] **TEST-03**: Streaming tests verify ordered delivery, interruption handling, and trace integrity
 - [x] **TEST-04**: CI validates: lint, type-check, unit/integration tests, E2E smoke, build
 
 ## v2 Requirements
@@ -179,11 +179,11 @@ Which phases cover which requirements. Updated during roadmap creation.
 | RAG-05 | Phase 10: File Upload + RAG | Complete |
 | SET-02 | Phase 10: File Upload + RAG | Complete |
 | SET-03 | Phase 10: File Upload + RAG | Complete |
-| SET-04 | Phase 11: Settings Completion + Quality Gate | Pending |
-| SET-06 | Phase 11: Settings Completion + Quality Gate | Pending |
-| TEST-01 | Phase 11: Settings Completion + Quality Gate | Pending |
-| TEST-02 | Phase 11: Settings Completion + Quality Gate | Pending |
-| TEST-03 | Phase 11: Settings Completion + Quality Gate | Pending |
+| SET-04 | Phase 11: Settings Completion + Quality Gate | Complete |
+| SET-06 | Phase 11: Settings Completion + Quality Gate | Complete |
+| TEST-01 | Phase 11: Settings Completion + Quality Gate | Complete |
+| TEST-02 | Phase 11: Settings Completion + Quality Gate | Complete |
+| TEST-03 | Phase 11: Settings Completion + Quality Gate | Complete |
 
 **Coverage:**
 - v1 requirements: 52 total
