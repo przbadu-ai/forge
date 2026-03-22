@@ -1,8 +1,12 @@
 // apiFetch wraps fetch with Authorization header injection.
 // Token is passed in explicitly (consumers get it from useAuth).
-// Use the same hostname as the browser (enables LAN access) with backend port 8000.
+// Production: NEXT_PUBLIC_API_URL="" (empty) → same origin via Next.js rewrites.
+// Development: NEXT_PUBLIC_API_URL unset → fallback to hostname:8000 for direct access.
 function getApiBase(): string {
-  if (process.env.NEXT_PUBLIC_API_URL) return process.env.NEXT_PUBLIC_API_URL;
+  const envUrl = process.env.NEXT_PUBLIC_API_URL;
+  // Explicitly set (even to empty string) — use it. Empty = same origin (reverse proxy/rewrites).
+  if (envUrl !== undefined && envUrl !== null) return envUrl;
+  // Development fallback: use backend port on same hostname (enables LAN access)
   if (typeof window !== "undefined") {
     return `${window.location.protocol}//${window.location.hostname}:8000`;
   }

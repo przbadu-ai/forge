@@ -8,6 +8,10 @@ services:
         max-file: "3"
 
   frontend:
+    build:
+      args:
+        NEXT_PUBLIC_API_URL: ""
+        BACKEND_URL: "http://backend:8000"
     restart: unless-stopped
     logging:
       driver: json-file

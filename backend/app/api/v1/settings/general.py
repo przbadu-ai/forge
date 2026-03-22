@@ -46,7 +46,7 @@ class GeneralSettingsUpdate(BaseModel):
 # ---------- Endpoints ----------
 
 
-@router.get("/", response_model=GeneralSettingsRead)
+@router.get("", response_model=GeneralSettingsRead)
 async def get_general_settings(
     session: AsyncSession = Depends(get_session),
 ) -> GeneralSettingsRead:
@@ -70,7 +70,7 @@ async def get_general_settings(
     )
 
 
-@router.put("/", response_model=GeneralSettingsRead)
+@router.put("", response_model=GeneralSettingsRead)
 async def update_general_settings(
     data: GeneralSettingsUpdate,
     session: AsyncSession = Depends(get_session),

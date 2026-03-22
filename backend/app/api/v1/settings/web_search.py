@@ -40,7 +40,7 @@ def _to_read(settings: AppSettings) -> WebSearchSettingsRead:
 # ---------- Endpoints ----------
 
 
-@router.get("/", response_model=WebSearchSettingsRead)
+@router.get("", response_model=WebSearchSettingsRead)
 async def get_web_search_settings(
     session: AsyncSession = Depends(get_session),
 ) -> WebSearchSettingsRead:
@@ -51,7 +51,7 @@ async def get_web_search_settings(
     return _to_read(settings)
 
 
-@router.put("/", response_model=WebSearchSettingsRead)
+@router.put("", response_model=WebSearchSettingsRead)
 async def update_web_search_settings(
     data: WebSearchSettingsUpdate,
     session: AsyncSession = Depends(get_session),

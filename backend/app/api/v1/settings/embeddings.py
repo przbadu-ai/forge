@@ -32,7 +32,7 @@ class EmbeddingSettingsUpdate(BaseModel):
 # ---------- Endpoints ----------
 
 
-@router.get("/", response_model=EmbeddingSettingsRead)
+@router.get("", response_model=EmbeddingSettingsRead)
 async def get_embedding_settings(
     session: AsyncSession = Depends(get_session),
 ) -> EmbeddingSettingsRead:
@@ -48,7 +48,7 @@ async def get_embedding_settings(
     )
 
 
-@router.put("/", response_model=EmbeddingSettingsRead)
+@router.put("", response_model=EmbeddingSettingsRead)
 async def update_embedding_settings(
     data: EmbeddingSettingsUpdate,
     session: AsyncSession = Depends(get_session),

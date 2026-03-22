@@ -12,10 +12,20 @@ const withSerwist = withSerwistInit({
   additionalPrecacheEntries: [{ url: "/~offline", revision }],
 });
 
+const backendUrl = process.env.BACKEND_URL || "http://localhost:8000";
+
 const nextConfig: NextConfig = {
   output: "standalone",
   compress: false, // Required: prevents Next.js from buffering SSE responses
   turbopack: {}, // Silence Turbopack warning; Serwist uses webpack plugin for SW generation
+  async rewrites() {
+    return [
+      {
+        source: "/api/:path*",
+        destination: `${backendUrl}/api/:path*`,
+      },
+    ];
+  },
   async headers() {
     return [
       {
@@ -30,8 +40,8 @@ const nextConfig: NextConfig = {
             value: "no-cache, no-store, must-revalidate",
           },
           {
-            key: "Content-Security-Policy",
-            value: "default-src 'self'; script-src 'self'",
+            key: "Service-Worker-Allowed",
+            value: "/",
           },
         ],
       },

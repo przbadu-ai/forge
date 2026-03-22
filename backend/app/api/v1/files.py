@@ -103,7 +103,7 @@ async def upload_file_endpoint(
     )
 
 
-@router.get("/", response_model=list[FileRead])
+@router.get("", response_model=list[FileRead])
 async def list_files(
     current_user: User = Depends(get_current_user),
     session: AsyncSession = Depends(get_session),

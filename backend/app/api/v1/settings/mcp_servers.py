@@ -125,7 +125,7 @@ async def _get_server(server_id: int, session: AsyncSession) -> McpServer:
 # ---------- Endpoints ----------
 
 
-@router.get("/", response_model=list[McpServerRead])
+@router.get("", response_model=list[McpServerRead])
 async def list_mcp_servers(
     session: AsyncSession = Depends(get_session),
 ) -> list[McpServerRead]:
@@ -134,7 +134,7 @@ async def list_mcp_servers(
     return [_to_read(s) for s in servers]
 
 
-@router.post("/", response_model=McpServerRead, status_code=status.HTTP_201_CREATED)
+@router.post("", response_model=McpServerRead, status_code=status.HTTP_201_CREATED)
 async def create_mcp_server(
     data: McpServerCreate,
     session: AsyncSession = Depends(get_session),

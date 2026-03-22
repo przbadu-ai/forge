@@ -75,6 +75,12 @@ None yet.
 - [Research]: iOS PWA auth persistence (SameSite=Lax fix) needs real device testing in Phase 13
 - [Research]: Forge icon assets may need creation if no source branding asset exists
 
+### Quick Tasks Completed
+
+| # | Description | Date | Commit | Directory |
+|---|-------------|------|--------|-----------|
+| 260322-o30 | Fix domain mapping for forge.przbadu.dev deployment | 2026-03-22 | 4f79986 | [260322-o30-fix-domain-mapping-for-forge-przbadu-dev](./quick/260322-o30-fix-domain-mapping-for-forge-przbadu-dev/) |
+
 ## Session Continuity
 
 Last activity: 2026-03-22
