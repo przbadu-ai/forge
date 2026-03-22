@@ -71,7 +71,7 @@ async def test_regenerate_deletes_last_assistant(auth_client: AsyncClient) -> No
         ],
     )
 
-    resp = await auth_client.post(f"{CHAT_BASE}/conversations/{conv_id}/regenerate")
+    resp = await auth_client.post(f"{CHAT_BASE}/{conv_id}/regenerate")
     assert resp.status_code == 200
     assert resp.json()["status"] == "ok"
 
@@ -95,7 +95,7 @@ async def test_regenerate_no_assistant_returns_404(auth_client: AsyncClient) -> 
         [{"role": "user", "content": "Hello"}],
     )
 
-    resp = await auth_client.post(f"{CHAT_BASE}/conversations/{conv_id}/regenerate")
+    resp = await auth_client.post(f"{CHAT_BASE}/{conv_id}/regenerate")
     assert resp.status_code == 404
     assert "No assistant message" in resp.json()["detail"]
 
@@ -110,7 +110,7 @@ async def test_regenerate_empty_conversation_returns_404(
     conv = await _create_conversation(auth_client, title="EmptyConv")
     conv_id = conv["id"]
 
-    resp = await auth_client.post(f"{CHAT_BASE}/conversations/{conv_id}/regenerate")
+    resp = await auth_client.post(f"{CHAT_BASE}/{conv_id}/regenerate")
     assert resp.status_code == 404
 
 
@@ -130,7 +130,7 @@ async def test_export_conversation(auth_client: AsyncClient) -> None:
         ],
     )
 
-    resp = await auth_client.get(f"{CHAT_BASE}/conversations/{conv_id}/export")
+    resp = await auth_client.get(f"{CHAT_BASE}/{conv_id}/export")
     assert resp.status_code == 200
 
     # Check Content-Disposition header
@@ -247,7 +247,7 @@ async def test_update_conversation_system_prompt(
 
 async def test_export_nonexistent_returns_404(auth_client: AsyncClient) -> None:
     """GET /conversations/99999/export returns 404."""
-    resp = await auth_client.get(f"{CHAT_BASE}/conversations/99999/export")
+    resp = await auth_client.get(f"{CHAT_BASE}/99999/export")
     assert resp.status_code == 404
 
 

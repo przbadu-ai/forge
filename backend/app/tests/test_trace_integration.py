@@ -344,7 +344,7 @@ async def test_trace_data_in_export(auth_client: AsyncClient, provider: LLMProvi
         session.add(msg)
         await session.commit()
 
-    resp = await auth_client.get(f"{CHAT_BASE}/conversations/{conv_id}/export")
+    resp = await auth_client.get(f"{CHAT_BASE}/{conv_id}/export")
     assert resp.status_code == 200
     export_data = resp.json()
     assert "messages" in export_data

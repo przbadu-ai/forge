@@ -329,7 +329,7 @@ async def _token_generator(
 
         mcp_result = await session.execute(select(McpServer))
         mcp_servers = list(mcp_result.scalars().all())
-        await discover_and_register_mcp_tools(
+        mcp_tool_schemas = await discover_and_register_mcp_tools(
             servers=mcp_servers,
             registry=registry,
             process_manager=mcp_process_manager,
@@ -350,6 +350,7 @@ async def _token_generator(
             registry=registry,
             tracer=tracer,
             run_store=RunStateStore(),
+            extra_tool_schemas=mcp_tool_schemas,
         )
         async for sse_line in orchestrator.run(
             client=client,
@@ -550,7 +551,7 @@ async def stream_chat(
 # ---------- Regenerate Endpoint ----------
 
 
-@router.post("/conversations/{conversation_id}/regenerate")
+@router.post("/{conversation_id}/regenerate")
 async def regenerate(
     conversation_id: int,
     current_user: User = Depends(get_current_user),
@@ -581,7 +582,7 @@ async def regenerate(
 # ---------- Export Endpoint ----------
 
 
-@router.get("/conversations/{conversation_id}/export")
+@router.get("/{conversation_id}/export")
 async def export_conversation(
     conversation_id: int,
     current_user: User = Depends(get_current_user),

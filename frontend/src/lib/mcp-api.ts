@@ -37,7 +37,21 @@ export interface McpServerUpdate {
 async function handleResponse<T>(res: Response): Promise<T> {
   if (!res.ok) {
     const body = await res.json().catch(() => ({ detail: res.statusText }));
-    throw new Error(body.detail ?? `Request failed (${res.status})`);
+    let message: string;
+    if (Array.isArray(body.detail)) {
+      // FastAPI validation errors: [{loc: [...], msg: "...", type: "..."}, ...]
+      message = body.detail
+        .map((e: Record<string, unknown>) => {
+          const loc = Array.isArray(e.loc) ? e.loc.join(" > ") : "";
+          return loc ? `${loc}: ${e.msg}` : String(e.msg ?? e);
+        })
+        .join("; ");
+    } else if (typeof body.detail === "string") {
+      message = body.detail;
+    } else {
+      message = `Request failed (${res.status})`;
+    }
+    throw new Error(message);
   }
   return res.json() as Promise<T>;
 }

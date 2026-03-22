@@ -22,6 +22,7 @@ class Orchestrator:
         registry: ExecutorRegistry,
         tracer: TraceEmitter,
         run_store: RunStateStore,
+        extra_tool_schemas: list[dict[str, Any]] | None = None,
         timeout: float = 30.0,
         max_retries: int = 3,
         max_iterations: int = 10,
@@ -29,6 +30,7 @@ class Orchestrator:
         self.registry = registry
         self.tracer = tracer
         self.run_store = run_store
+        self.extra_tool_schemas = extra_tool_schemas or []
         self.timeout = timeout
         self.max_retries = max_retries
         self.max_iterations = max_iterations
@@ -42,6 +44,13 @@ class Orchestrator:
     def _sse(self, data: dict[str, Any]) -> str:
         """Format a dict as an SSE data line."""
         return f"data: {json.dumps(data)}\n\n"
+
+    def _build_tool_schemas(self) -> list[dict[str, Any]] | None:
+        """Build the combined list of tool schemas (builtin + MCP/extra)."""
+        if not self.registry.available_tools():
+            return None
+        schemas = list(BUILTIN_TOOL_SCHEMAS) + list(self.extra_tool_schemas)
+        return schemas if schemas else None
 
     async def _llm_call_with_retry(
         self,
@@ -102,8 +111,8 @@ class Orchestrator:
                 self.run_store.increment_iteration(run_id)
                 iteration += 1
 
-                # Determine tools to pass: only on first iterations where tool calls are possible
-                tools = BUILTIN_TOOL_SCHEMAS if self.registry.available_tools() else None
+                # Build combined tool schemas (builtin + MCP/extra)
+                tools = self._build_tool_schemas()
 
                 try:
                     response = await self._llm_call_with_retry(
