@@ -12,7 +12,7 @@ class TraceEvent:
     """A single trace event in an execution trace."""
 
     id: str
-    type: Literal["run_start", "run_end", "token_generation", "error", "tool_call"]
+    type: Literal["run_start", "run_end", "token_generation", "error", "tool_call", "mcp_discovery"]
     name: str
     status: Literal["running", "completed", "error"]
     started_at: str
@@ -113,6 +113,40 @@ class TraceEmitter:
             started_at=now,
             completed_at=now,
             output=output,
+            error=error,
+        )
+        self._events.append(event)
+        return event
+
+    def emit_mcp_discovery_start(self, server_name: str, transport_type: str) -> TraceEvent:
+        """Create and append an mcp_discovery start event."""
+        event = TraceEvent(
+            id=str(uuid.uuid4()),
+            type="mcp_discovery",
+            name=f"mcp_discovery:{server_name}",
+            status="running",
+            started_at=self._now(),
+            metadata={"server_name": server_name, "transport_type": transport_type},
+        )
+        self._events.append(event)
+        return event
+
+    def emit_mcp_discovery_end(
+        self,
+        server_name: str,
+        tools_found: list[str] | None = None,
+        error: str | None = None,
+    ) -> TraceEvent:
+        """Create and append an mcp_discovery completion event."""
+        now = self._now()
+        event = TraceEvent(
+            id=str(uuid.uuid4()),
+            type="mcp_discovery",
+            name=f"mcp_discovery:{server_name}",
+            status="error" if error else "completed",
+            started_at=now,
+            completed_at=now,
+            output={"tools": tools_found, "count": len(tools_found)} if tools_found else None,
             error=error,
         )
         self._events.append(event)

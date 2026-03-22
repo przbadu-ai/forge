@@ -1,5 +1,6 @@
 """CRUD endpoints for MCP server management."""
 
+import asyncio
 import json
 from datetime import UTC, datetime
 
@@ -12,6 +13,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.api.v1.deps import get_current_user
 from app.core.database import get_session
 from app.models.mcp_server import McpServer
+from app.services.executors.mcp_executor import _connect_session
 
 router = APIRouter(dependencies=[Depends(get_current_user)])
 
@@ -73,6 +75,15 @@ class McpServerRead(BaseModel):
     is_enabled: bool
     created_at: datetime
     updated_at: datetime
+
+
+class McpTestConnectionResponse(BaseModel):
+    success: bool
+    server_name: str
+    transport_type: str
+    tools_found: list[str] = []
+    tool_count: int = 0
+    error: str | None = None
 
 
 # ---------- Helpers ----------
@@ -218,6 +229,33 @@ async def toggle_mcp_server(
     await session.commit()
     await session.refresh(server)
     return _to_read(server)
+
+
+@router.post("/{server_id}/test-connection", response_model=McpTestConnectionResponse)
+async def test_mcp_connection(
+    server_id: int,
+    session: AsyncSession = Depends(get_session),
+) -> McpTestConnectionResponse:
+    """Test connectivity to an MCP server and list its available tools."""
+    server = await _get_server(server_id, session)
+    try:
+        async with _connect_session(server, timeout=10.0) as mcp_session:
+            tools_result = await asyncio.wait_for(mcp_session.list_tools(), timeout=10.0)
+        tool_names = [t.name for t in tools_result.tools]
+        return McpTestConnectionResponse(
+            success=True,
+            server_name=server.name,
+            transport_type=server.transport_type,
+            tools_found=tool_names,
+            tool_count=len(tool_names),
+        )
+    except Exception as exc:
+        return McpTestConnectionResponse(
+            success=False,
+            server_name=server.name,
+            transport_type=server.transport_type,
+            error=str(exc),
+        )
 
 
 @router.post("/import", response_model=McpBulkImportResponse)

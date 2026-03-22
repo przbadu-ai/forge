@@ -135,6 +135,7 @@ async def discover_and_register_mcp_tools(
     for server in servers:
         if not server.is_enabled:
             continue
+        tracer.emit_mcp_discovery_start(server.name, server.transport_type or "stdio")
         try:
             async with _connect_session(server, timeout) as session:
                 tools_result = await asyncio.wait_for(session.list_tools(), timeout=timeout)
@@ -164,7 +165,12 @@ async def discover_and_register_mcp_tools(
                     },
                 }
                 tool_schemas.append(schema)
-        except Exception:
-            logger.exception("Failed to discover tools from MCP server: %s", server.name)
+
+            tool_names = [f"{server.name}.{t.name}" for t in tools_result.tools]
+            tracer.emit_mcp_discovery_end(server.name, tools_found=tool_names)
+        except Exception as exc:
+            error_msg = f"Failed to discover tools from MCP server '{server.name}': {exc}"
+            logger.exception("MCP discovery error: %s", server.name)
+            tracer.emit_mcp_discovery_end(server.name, error=error_msg)
 
     return tool_schemas

@@ -80,10 +80,11 @@ None yet.
 | # | Description | Date | Commit | Directory |
 |---|-------------|------|--------|-----------|
 | 260322-o30 | Fix domain mapping for forge.przbadu.dev deployment | 2026-03-22 | 4f79986 | [260322-o30-fix-domain-mapping-for-forge-przbadu-dev](./quick/260322-o30-fix-domain-mapping-for-forge-przbadu-dev/) |
+| 260322-piv | Fix MCP server not working in production (trace visibility + test-connection) | 2026-03-22 | 1f90132 | [260322-piv-fix-mcp-server-not-working-in-production](./quick/260322-piv-fix-mcp-server-not-working-in-production/) |
 
 ## Session Continuity
 
-Last activity: 2026-03-22
-Last session: 2026-03-22T11:09:58.260Z
-Stopped at: Completed 12-01-PLAN.md
+Last activity: 2026-03-22 - Completed quick task 260322-piv: Fix MCP server not working in production
+Last session: 2026-03-22T12:44:36.000Z
+Stopped at: Completed 260322-piv quick task
 Resume file: None
