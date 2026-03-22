@@ -191,7 +191,7 @@ async def _check_web_search(settings: AppSettings) -> list[ServiceStatus]:
 # ---------- Endpoint ----------
 
 
-@router.get("/", response_model=DiagnosticsResponse)
+@router.get("", response_model=DiagnosticsResponse)
 async def get_diagnostics(
     session: AsyncSession = Depends(get_session),
 ) -> DiagnosticsResponse:

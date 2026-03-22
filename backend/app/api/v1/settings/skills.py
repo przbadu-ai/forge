@@ -82,7 +82,7 @@ async def _get_skill(skill_id: int, session: AsyncSession) -> Skill:
 # ---------- Endpoints ----------
 
 
-@router.get("/", response_model=list[SkillRead])
+@router.get("", response_model=list[SkillRead])
 async def list_skills(
     session: AsyncSession = Depends(get_session),
 ) -> list[SkillRead]:
@@ -91,7 +91,7 @@ async def list_skills(
     return [_to_read(s) for s in skills]
 
 
-@router.post("/", response_model=SkillRead, status_code=status.HTTP_201_CREATED)
+@router.post("", response_model=SkillRead, status_code=status.HTTP_201_CREATED)
 async def create_skill(
     data: SkillCreate,
     session: AsyncSession = Depends(get_session),

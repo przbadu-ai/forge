@@ -87,7 +87,7 @@ async def _clear_other_defaults(session: AsyncSession, *, exclude_id: int | None
 # ---------- Endpoints ----------
 
 
-@router.get("/", response_model=list[ProviderRead])
+@router.get("", response_model=list[ProviderRead])
 async def list_providers(
     session: AsyncSession = Depends(get_session),
 ) -> list[ProviderRead]:
@@ -96,7 +96,7 @@ async def list_providers(
     return [_to_read(p) for p in providers]
 
 
-@router.post("/", response_model=ProviderRead, status_code=status.HTTP_201_CREATED)
+@router.post("", response_model=ProviderRead, status_code=status.HTTP_201_CREATED)
 async def create_provider(
     data: ProviderCreate,
     session: AsyncSession = Depends(get_session),
