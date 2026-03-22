@@ -31,6 +31,27 @@ class McpServerCreate(BaseModel):
     is_enabled: bool = True
 
 
+class McpServerEntry(BaseModel):
+    """Single server entry in mcp.json format (Cursor/Claude Desktop)."""
+
+    command: str | None = None
+    args: list[str] = []
+    env: dict[str, str] = {}
+    url: str | None = None
+
+
+class McpBulkImportRequest(BaseModel):
+    """Accepts the standard mcp.json format: {"mcpServers": {"name": {...}}}."""
+
+    mcpServers: dict[str, McpServerEntry]
+
+
+class McpBulkImportResponse(BaseModel):
+    created: int
+    updated: int
+    servers: list["McpServerRead"]
+
+
 class McpServerUpdate(BaseModel):
     name: str | None = None
     transport_type: str | None = None
@@ -197,3 +218,82 @@ async def toggle_mcp_server(
     await session.commit()
     await session.refresh(server)
     return _to_read(server)
+
+
+@router.post("/import", response_model=McpBulkImportResponse)
+async def import_mcp_servers(
+    data: McpBulkImportRequest,
+    session: AsyncSession = Depends(get_session),
+) -> McpBulkImportResponse:
+    """Bulk import MCP servers from Cursor/Claude Desktop mcp.json format.
+
+    Upserts servers by name: existing servers are updated, new ones are created.
+    """
+    created_count = 0
+    updated_count = 0
+    imported_servers: list[McpServer] = []
+
+    for server_name, entry in data.mcpServers.items():
+        # Determine transport type from entry fields
+        transport_type = "sse" if entry.url else "stdio"
+
+        # Validate transport fields; raises HTTPException with 422 on failure
+        try:
+            _validate_transport_fields(transport_type, entry.command, entry.url)
+        except HTTPException as exc:
+            await session.rollback()
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+                detail=f"Validation failed for server '{server_name}': {exc.detail}",
+            ) from exc
+
+        # Check if server with this name already exists
+        result = await session.execute(
+            select(McpServer).where(McpServer.name == server_name)
+        )
+        existing = result.scalars().first()
+
+        if existing:
+            # Update existing server
+            existing.command = entry.command
+            existing.args = json.dumps(entry.args)
+            existing.env_vars = json.dumps(entry.env)
+            existing.url = entry.url
+            existing.transport_type = transport_type
+            existing.updated_at = datetime.now(UTC)
+            session.add(existing)
+            imported_servers.append(existing)
+            updated_count += 1
+        else:
+            # Create new server
+            server = McpServer(
+                name=server_name,
+                transport_type=transport_type,
+                command=entry.command,
+                url=entry.url,
+                args=json.dumps(entry.args),
+                env_vars=json.dumps(entry.env),
+                is_enabled=True,
+            )
+            session.add(server)
+            imported_servers.append(server)
+            created_count += 1
+
+    try:
+        await session.commit()
+    except IntegrityError as exc:
+        await session.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Database integrity error during bulk import",
+        ) from exc
+
+    # Refresh all servers to get their final state
+    for server in imported_servers:
+        await session.refresh(server)
+
+    return McpBulkImportResponse(
+        created=created_count,
+        updated=updated_count,
+        servers=[_to_read(s) for s in imported_servers],
+    )
