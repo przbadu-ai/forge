@@ -1,7 +1,7 @@
 # Requirements: Forge
 
 **Defined:** 2026-03-22
-**Core Value:** Every AI interaction — chat, tool call, MCP action, skill execution — is visible, persisted, and reviewable.
+**Core Value:** Every AI interaction -- chat, tool call, MCP action, skill execution -- is visible, persisted, and reviewable.
 
 ## v2.1 Requirements
 
@@ -46,8 +46,8 @@ Requirements for PWA milestone. Each maps to roadmap phases.
 
 | Feature | Reason |
 |---------|--------|
-| Full offline chat | LLM calls require live backend — offline chat is impossible |
-| Push notifications | Single-user self-hosted tool — user is always present |
+| Full offline chat | LLM calls require live backend -- offline chat is impossible |
+| Push notifications | Single-user self-hosted tool -- user is always present |
 | Background sync | Forge is not a messaging app; no queue needed |
 | Native app (React Native/Capacitor) | PWA achieves installability without native complexity |
 | OAuth/social login | Single-user tool, JWT sufficient |
@@ -58,26 +58,26 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| PWA-01 | — | Pending |
-| PWA-02 | — | Pending |
-| PWA-03 | — | Pending |
-| PWA-04 | — | Pending |
-| PWA-05 | — | Pending |
-| INST-01 | — | Pending |
-| INST-02 | — | Pending |
-| INST-03 | — | Pending |
-| INST-04 | — | Pending |
-| RESP-01 | — | Pending |
-| RESP-02 | — | Pending |
-| RESP-03 | — | Pending |
-| RESP-04 | — | Pending |
-| RESP-05 | — | Pending |
+| PWA-01 | Phase 12 | Pending |
+| PWA-02 | Phase 12 | Pending |
+| PWA-03 | Phase 12 | Pending |
+| PWA-04 | Phase 12 | Pending |
+| PWA-05 | Phase 12 | Pending |
+| INST-01 | Phase 13 | Pending |
+| INST-02 | Phase 13 | Pending |
+| INST-03 | Phase 13 | Pending |
+| INST-04 | Phase 13 | Pending |
+| RESP-01 | Phase 14 | Pending |
+| RESP-02 | Phase 14 | Pending |
+| RESP-03 | Phase 14 | Pending |
+| RESP-04 | Phase 14 | Pending |
+| RESP-05 | Phase 14 | Pending |
 
 **Coverage:**
 - v2.1 requirements: 14 total
-- Mapped to phases: 0
-- Unmapped: 14 ⚠️
+- Mapped to phases: 14
+- Unmapped: 0
 
 ---
 *Requirements defined: 2026-03-22*
-*Last updated: 2026-03-22 after initial definition*
+*Last updated: 2026-03-22 after roadmap creation*
