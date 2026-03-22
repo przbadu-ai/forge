@@ -18,6 +18,10 @@ vi.mock("@/lib/chat-api", () => ({
   getMessages: vi.fn().mockResolvedValue([]),
 }));
 
+vi.mock("@/lib/skills-api", () => ({
+  listSkills: () => Promise.resolve([]),
+}));
+
 vi.mock("@/context/auth-context", () => ({
   useAuth: () => ({
     user: { id: 1, username: "admin", is_active: true, created_at: "" },
@@ -126,7 +130,7 @@ describe("ChatInput", () => {
     const onSend = vi.fn();
     const user = userEvent.setup();
 
-    render(<ChatInput onSend={onSend} />);
+    render(<ChatInput onSend={onSend} />, { wrapper: createWrapper() });
 
     const textarea = screen.getByPlaceholderText(/type a message/i);
     await user.type(textarea, "Hello world");
@@ -139,7 +143,7 @@ describe("ChatInput", () => {
     const onSend = vi.fn();
     const user = userEvent.setup();
 
-    render(<ChatInput onSend={onSend} />);
+    render(<ChatInput onSend={onSend} />, { wrapper: createWrapper() });
 
     const textarea = screen.getByPlaceholderText(/type a message/i);
     await user.type(textarea, "Line one");
@@ -152,7 +156,7 @@ describe("ChatInput", () => {
     const onSend = vi.fn();
     const user = userEvent.setup();
 
-    render(<ChatInput onSend={onSend} disabled />);
+    render(<ChatInput onSend={onSend} disabled />, { wrapper: createWrapper() });
 
     const textarea = screen.getByPlaceholderText(/type a message/i);
     // textarea is disabled, so type won't work - verify the state
@@ -163,7 +167,7 @@ describe("ChatInput", () => {
     const onSend = vi.fn();
     const user = userEvent.setup();
 
-    render(<ChatInput onSend={onSend} />);
+    render(<ChatInput onSend={onSend} />, { wrapper: createWrapper() });
 
     const textarea = screen.getByPlaceholderText(
       /type a message/i,
@@ -178,7 +182,7 @@ describe("ChatInput", () => {
     const onSend = vi.fn();
     const user = userEvent.setup();
 
-    render(<ChatInput onSend={onSend} />);
+    render(<ChatInput onSend={onSend} />, { wrapper: createWrapper() });
 
     const textarea = screen.getByPlaceholderText(/type a message/i);
     await user.click(textarea);

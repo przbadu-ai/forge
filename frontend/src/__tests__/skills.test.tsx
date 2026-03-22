@@ -64,7 +64,7 @@ const SAMPLE_SKILLS: SkillRead[] = [
     is_enabled: true,
     config: null,
     source_path: null,
-    instructions: null,
+    content: null,
     created_at: "2026-01-01T00:00:00Z",
   },
   {
@@ -74,7 +74,7 @@ const SAMPLE_SKILLS: SkillRead[] = [
     is_enabled: false,
     config: null,
     source_path: null,
-    instructions: null,
+    content: null,
     created_at: "2026-01-02T00:00:00Z",
   },
 ];

@@ -7,7 +7,7 @@ export interface SkillRead {
   is_enabled: boolean;
   config: string | null;
   source_path: string | null;
-  instructions: string | null;
+  content: string | null;
   created_at: string;
 }
 

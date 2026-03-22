@@ -1,6 +1,7 @@
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { vi, describe, it, expect, beforeEach } from "vitest";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 
 // ---------- Mocks ----------
 
@@ -17,9 +18,26 @@ vi.mock("@/context/auth-context", () => ({
   ),
 }));
 
+vi.mock("@/lib/skills-api", () => ({
+  listSkills: () => Promise.resolve([]),
+}));
+
 // ---------- Component imports ----------
 
 import { ChatInput } from "@/components/chat/ChatInput";
+
+// ---------- Helpers ----------
+
+function createWrapper() {
+  const queryClient = new QueryClient({
+    defaultOptions: { queries: { retry: false } },
+  });
+  return function Wrapper({ children }: { children: React.ReactNode }) {
+    return (
+      <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
+    );
+  };
+}
 
 // ---------- Tests ----------
 
@@ -29,7 +47,9 @@ describe("ChatInput — streaming toggle", () => {
   });
 
   it("renders Send button when isStreaming=false", () => {
-    render(<ChatInput onSend={vi.fn()} isStreaming={false} />);
+    render(<ChatInput onSend={vi.fn()} isStreaming={false} />, {
+      wrapper: createWrapper(),
+    });
 
     expect(
       screen.getByRole("button", { name: /send message/i }),
@@ -40,7 +60,9 @@ describe("ChatInput — streaming toggle", () => {
   });
 
   it("renders Stop button when isStreaming=true", () => {
-    render(<ChatInput onSend={vi.fn()} isStreaming={true} onStop={vi.fn()} />);
+    render(<ChatInput onSend={vi.fn()} isStreaming={true} onStop={vi.fn()} />, {
+      wrapper: createWrapper(),
+    });
 
     expect(
       screen.getByRole("button", { name: /stop generation/i }),
@@ -54,7 +76,9 @@ describe("ChatInput — streaming toggle", () => {
     const onStop = vi.fn();
     const user = userEvent.setup();
 
-    render(<ChatInput onSend={vi.fn()} isStreaming={true} onStop={onStop} />);
+    render(<ChatInput onSend={vi.fn()} isStreaming={true} onStop={onStop} />, {
+      wrapper: createWrapper(),
+    });
 
     const stopBtn = screen.getByRole("button", { name: /stop generation/i });
     await user.click(stopBtn);
@@ -63,7 +87,7 @@ describe("ChatInput — streaming toggle", () => {
   });
 
   it("renders Send button by default (no isStreaming prop)", () => {
-    render(<ChatInput onSend={vi.fn()} />);
+    render(<ChatInput onSend={vi.fn()} />, { wrapper: createWrapper() });
 
     expect(
       screen.getByRole("button", { name: /send message/i }),
