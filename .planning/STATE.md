@@ -137,9 +137,11 @@ None yet.
 | 260322-cka | Full MCP support (studio/local/SSE) and navigation UI/UX between pages | 2026-03-22 | d171e4c | [260322-cka-full-mcp-support-studio-local-sse-and-na](./quick/260322-cka-full-mcp-support-studio-local-sse-and-na/) |
 | 260322-cox | Fix ChromaDB health check to use in-process EphemeralClient | 2026-03-22 | b18a417 | [260322-cox-fix-chromadb-connection-all-connection-a](./quick/260322-cox-fix-chromadb-connection-all-connection-a/) |
 | 260322-ctf | MCP JSON bulk import and toggle between JSON editor and form views | 2026-03-22 | 4951141 | [260322-ctf-mcp-json-bulk-import-and-toggle-between-](./quick/260322-ctf-mcp-json-bulk-import-and-toggle-between-/) |
+| 260322-ekc | Simplify create skill form to 3 fields: name, description, instructions | 2026-03-22 | f78d599 | [260322-ekc-simplify-create-skill-form-to-3-fields-n](./quick/260322-ekc-simplify-create-skill-form-to-3-fields-n/) |
 
 ## Session Continuity
 
+Last activity: 2026-03-22 - Completed quick task 260322-ekc: Simplify create skill form
 Last session: 2026-03-22T04:24:22.840Z
 Stopped at: Completed 09-01-PLAN.md
 Resume file: None
