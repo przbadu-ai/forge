@@ -13,6 +13,7 @@ export interface GeneralSettings {
   system_prompt: string | null;
   temperature: number;
   max_tokens: number;
+  skill_directories: string[];
 }
 
 export interface Message {

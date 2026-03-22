@@ -1,3 +1,5 @@
+import json
+
 from fastapi import APIRouter, Depends
 from pydantic import BaseModel, field_validator
 from sqlalchemy import select
@@ -17,12 +19,14 @@ class GeneralSettingsRead(BaseModel):
     system_prompt: str | None = None
     temperature: float = 0.7
     max_tokens: int = 2048
+    skill_directories: list[str] = []
 
 
 class GeneralSettingsUpdate(BaseModel):
     system_prompt: str | None = None
     temperature: float | None = None
     max_tokens: int | None = None
+    skill_directories: list[str] | None = None
 
     @field_validator("temperature")
     @classmethod
@@ -50,10 +54,19 @@ async def get_general_settings(
     settings = result.scalars().first()
     if settings is None:
         return GeneralSettingsRead()
+
+    skill_dirs: list[str] = []
+    if settings.skill_directories:
+        try:
+            skill_dirs = json.loads(settings.skill_directories)
+        except (json.JSONDecodeError, TypeError):
+            skill_dirs = []
+
     return GeneralSettingsRead(
         system_prompt=settings.system_prompt,
         temperature=settings.temperature,
         max_tokens=settings.max_tokens,
+        skill_directories=skill_dirs,
     )
 
 
@@ -78,13 +91,23 @@ async def update_general_settings(
         settings.temperature = data.temperature
     if data.max_tokens is not None:
         settings.max_tokens = data.max_tokens
+    if data.skill_directories is not None:
+        settings.skill_directories = json.dumps(data.skill_directories)
 
     session.add(settings)
     await session.commit()
     await session.refresh(settings)
 
+    skill_dirs: list[str] = []
+    if settings.skill_directories:
+        try:
+            skill_dirs = json.loads(settings.skill_directories)
+        except (json.JSONDecodeError, TypeError):
+            skill_dirs = []
+
     return GeneralSettingsRead(
         system_prompt=settings.system_prompt,
         temperature=settings.temperature,
         max_tokens=settings.max_tokens,
+        skill_directories=skill_dirs,
     )

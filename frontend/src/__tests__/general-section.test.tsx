@@ -22,11 +22,13 @@ vi.mock("@/lib/settings-api", () => ({
     system_prompt: "You are helpful.",
     temperature: 0.7,
     max_tokens: 4096,
+    skill_directories: [],
   }),
   updateGeneralSettings: vi.fn().mockResolvedValue({
     system_prompt: "You are helpful.",
     temperature: 0.7,
     max_tokens: 4096,
+    skill_directories: [],
   }),
 }));
 

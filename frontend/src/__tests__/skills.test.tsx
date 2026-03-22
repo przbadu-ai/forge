@@ -8,10 +8,16 @@ import type { SkillRead } from "@/lib/skills-api";
 
 const mockListSkills = vi.fn();
 const mockToggleSkill = vi.fn();
+const mockCreateSkill = vi.fn();
+const mockDeleteSkill = vi.fn();
+const mockSyncSkills = vi.fn();
 
 vi.mock("@/lib/skills-api", () => ({
   listSkills: (...args: unknown[]) => mockListSkills(...args),
   toggleSkill: (...args: unknown[]) => mockToggleSkill(...args),
+  createSkill: (...args: unknown[]) => mockCreateSkill(...args),
+  deleteSkill: (...args: unknown[]) => mockDeleteSkill(...args),
+  syncSkills: (...args: unknown[]) => mockSyncSkills(...args),
 }));
 
 vi.mock("@/context/auth-context", () => ({
@@ -57,6 +63,8 @@ const SAMPLE_SKILLS: SkillRead[] = [
     description: "Search the web for current information",
     is_enabled: true,
     config: null,
+    source_path: null,
+    instructions: null,
     created_at: "2026-01-01T00:00:00Z",
   },
   {
@@ -65,6 +73,8 @@ const SAMPLE_SKILLS: SkillRead[] = [
     description: "Execute code snippets in a sandboxed environment",
     is_enabled: false,
     config: null,
+    source_path: null,
+    instructions: null,
     created_at: "2026-01-02T00:00:00Z",
   },
 ];

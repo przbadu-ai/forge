@@ -12,6 +12,7 @@ export function GeneralSection() {
   const [systemPrompt, setSystemPrompt] = useState("");
   const [temperature, setTemperature] = useState(0.7);
   const [maxTokens, setMaxTokens] = useState(4096);
+  const [skillDirectories, setSkillDirectories] = useState("");
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
 
@@ -20,6 +21,9 @@ export function GeneralSection() {
       setSystemPrompt(settings.system_prompt ?? "");
       setTemperature(settings.temperature);
       setMaxTokens(settings.max_tokens);
+      setSkillDirectories(
+        (settings.skill_directories ?? []).join("\n")
+      );
     }
   }, [settings]);
 
@@ -27,10 +31,15 @@ export function GeneralSection() {
     setSaving(true);
     setSaved(false);
     try {
+      const dirs = skillDirectories
+        .split("\n")
+        .map((l) => l.trim())
+        .filter(Boolean);
       await updateSettings({
         system_prompt: systemPrompt || null,
         temperature,
         max_tokens: maxTokens,
+        skill_directories: dirs,
       });
       setSaved(true);
       setTimeout(() => setSaved(false), 2000);
@@ -102,6 +111,23 @@ export function GeneralSection() {
           onChange={(e) => setMaxTokens(parseInt(e.target.value) || 1)}
           aria-label="Max tokens"
         />
+      </div>
+
+      <div className="space-y-2">
+        <Label htmlFor="skill-directories">Skill Directories</Label>
+        <textarea
+          id="skill-directories"
+          value={skillDirectories}
+          onChange={(e) => setSkillDirectories(e.target.value)}
+          placeholder={"One directory path per line\n/path/to/skills\n~/.claude/skills"}
+          rows={3}
+          className="flex w-full rounded-lg border border-input bg-transparent px-3 py-2 text-sm outline-none placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 disabled:opacity-50"
+          aria-label="Skill directories"
+        />
+        <p className="text-muted-foreground text-xs">
+          Directories containing skill subdirectories with SKILL.md files. One
+          path per line.
+        </p>
       </div>
 
       <Button onClick={() => void handleSave()} disabled={saving}>
