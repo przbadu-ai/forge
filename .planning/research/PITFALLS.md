@@ -1,235 +1,218 @@
 # Pitfalls Research
 
-**Domain:** Local-first AI assistant (Next.js + FastAPI + SQLite + ChromaDB + MCP)
-**Researched:** 2026-03-21
-**Confidence:** HIGH (multiple verified sources per pitfall)
+**Domain:** PWA integration for existing Next.js AI chat app (SSE streaming + JWT auth + dynamic content)
+**Researched:** 2026-03-22
+**Confidence:** HIGH (verified against Next.js official docs, W3C service worker spec discussions, and Forge codebase analysis)
 
 ## Critical Pitfalls
 
-### Pitfall 1: Next.js Route Handler SSE Buffering — Tokens Arrive All at Once
+### Pitfall 1: Service Worker Intercepts SSE Streaming Requests — Kills Token-by-Token Delivery
 
 **What goes wrong:**
-Streaming tokens appear to work in development but the client receives ALL tokens in a single batch when deployed or when Next.js compression is active. The root cause is that Next.js Route Handlers (App Router) buffer the response until the handler function returns, and also gzip compression buffers chunks before flushing. The user sees a long pause then instant full response — no streaming.
+The service worker's `fetch` event handler intercepts the POST request to `/api/v1/chat/{id}/stream`. Since the response is a long-lived SSE stream using `ReadableStream`, the service worker either: (a) tries to cache the response and waits for the stream to complete (buffering all tokens), (b) holds the worker alive for the entire duration of the stream (violating the SW lifecycle), or (c) corrupts the stream by cloning it for cache storage. The user sees tokens arrive all at once after the LLM finishes, or streaming breaks entirely.
 
 **Why it happens:**
-Developers wire up SSE correctly on the FastAPI side, proxy through a Next.js route handler for auth/header injection, and never notice buffering in development because localhost bypasses gzip. Production behind nginx or Vercel triggers it.
+Default service worker fetch handlers (including Workbox/Serwist runtime caching) match all requests. Forge uses `fetch()` + `ReadableStream` for SSE (not `EventSource`), so the Accept header is not `text/event-stream` — the standard SSE bypass check does not work. The request looks like a normal POST to the service worker.
 
 **How to avoid:**
-- Set explicit headers: `Content-Type: text/event-stream; charset=utf-8`, `Cache-Control: no-cache, no-transform`, `Connection: keep-alive`, `X-Accel-Buffering: no`
-- Disable Next.js response compression in `next.config.js`: `compress: false`
-- Export `export const dynamic = 'force-dynamic'` on SSE route handlers
-- Use the `ReadableStream` API in Next.js route handlers rather than older `res.write` patterns
-- Alternatively, have the browser connect directly to the FastAPI SSE endpoint (avoid proxying through Next.js entirely for streaming routes)
+- In the service worker fetch handler, explicitly bypass all requests to the backend API base URL (port 8000 or `NEXT_PUBLIC_API_URL`). The service worker should `return` without calling `respondWith()` for these requests, letting the browser handle them natively.
+- Additionally, bypass any request where the URL path contains `/stream` or `/chat/` as a defense-in-depth measure.
+- Never use a catch-all `NetworkFirst` or `StaleWhileRevalidate` strategy without URL filtering.
+- Test streaming after adding the service worker — this is the single most likely regression.
+
+```javascript
+// sw.js fetch handler pattern
+self.addEventListener('fetch', (event) => {
+  const url = new URL(event.request.url);
+  // Never intercept backend API calls — especially SSE streams
+  if (url.port === '8000' || url.pathname.includes('/stream')) {
+    return; // Let browser handle natively
+  }
+  // Only handle same-origin navigation and static asset requests
+  // ...
+});
+```
 
 **Warning signs:**
-- Streaming works in `localhost:3000 -> localhost:8000` but fails in Docker or production
-- DevTools Network tab shows the SSE request completing instantly with all data
-- No incremental token display; full response appears after LLM finishes generating
+- Streaming worked before adding the service worker, stops working after
+- Tokens arrive in a single batch instead of incrementally
+- `AbortController` stop button no longer terminates the stream
+- DevTools Application > Service Workers shows the fetch handler intercepting `/stream` requests
 
-**Phase to address:** Core Streaming Infrastructure (Phase 1 / foundation phase)
+**Phase to address:** Phase 1 (Service Worker foundation) — this must be the FIRST thing validated after SW registration
 
 ---
 
-### Pitfall 2: OpenAI-Compatible API Behavioral Divergence Across Providers
+### Pitfall 2: Service Worker Caches Authenticated Responses — Serves Stale or Wrong-User Data
 
 **What goes wrong:**
-The API accepts requests without error, but streaming behavior, tool call format, model name conventions, and error responses differ enough across Ollama, LM Studio, vLLM, and remote providers that code written against one breaks on another.
-
-Specific divergences:
-- **Tool/function calling**: LM Studio does not support streaming tool calls or parallel function invocation. vLLM requires `--enable-auto-tool-choice` with a parser flag (`hermes`, `llama3`, `mistral`). Ollama's tool support varies by model.
-- **Streaming delta format**: Tool call arguments arrive as partial JSON deltas during streaming. Some providers emit differently structured `delta` events.
-- **Model name format**: `llama3.2:3b` (Ollama) vs `lmstudio-community/Meta-Llama-3.2-3B-GGUF` vs `meta-llama/Llama-3.2-3B-Instruct` (vLLM).
-- **Error response shape**: Some providers return HTTP 200 with an error in the body rather than HTTP 4xx/5xx.
+The service worker caches API responses that include JWT-authenticated data (conversation list, messages, settings). On the next request, it returns the cached response without checking if the JWT is still valid or if the user has logged out. In Forge's specific case: (a) after logout and re-login, the SW serves cached conversation data from the previous session, (b) after token refresh, the SW serves a response that was fetched with the old token, or (c) the SW caches a 401 response and serves it even after re-authentication.
 
 **Why it happens:**
-Developers test against one provider (usually Ollama), assume "OpenAI-compatible" means fully identical, and discover divergence only after adding a second provider or enabling tool calling.
+Forge stores the JWT in memory (`useAuth` context) and passes it via the `Authorization` header. The service worker sees the response as a normal fetch response and caches it based on URL alone. The Authorization header is not part of the cache key by default. Developers add runtime caching for "API responses" without realizing every response is user-specific and session-specific.
 
 **How to avoid:**
-- Build a provider adapter layer that normalizes responses before they reach orchestration logic
-- Test tool calling against each supported provider type in CI (mock or real)
-- Never rely on raw model name as identifier — store a display name and API model string separately
-- Handle partial JSON streaming for tool call arguments explicitly; don't assume arguments arrive in one chunk
-- Implement a health-check / capability detection endpoint per provider (can it do tool calls? streaming? embeddings?)
+- Never cache any request that goes to the backend API. The service worker should only cache: the app shell (HTML), static assets (JS, CSS, images, fonts), and the manifest.
+- If API caching is ever considered (for offline mode), cache keys MUST include a session identifier, and the entire cache must be cleared on logout.
+- Add a `message` listener in the SW that clears all caches when the main thread sends a `LOGOUT` message.
+- Never cache responses with `Authorization` headers — add an explicit check.
 
 **Warning signs:**
-- Tool calls work with Ollama but silently fail with LM Studio
-- Switching providers causes `undefined` errors in streaming handler
-- Model selector shows raw API model names without normalization
+- Conversations appear from a previous session after logout/login
+- Settings changes don't reflect until hard refresh (Ctrl+Shift+R)
+- 401 errors persist even after successful re-authentication
+- Different conversations show identical message content
 
-**Phase to address:** Provider integration layer (Phase 1 or 2)
+**Phase to address:** Phase 1 (Service Worker foundation) — must be architecturally decided before any caching strategy is implemented
 
 ---
 
-### Pitfall 3: Streaming Abort / Reconnect Incompatibility
+### Pitfall 3: Service Worker Scope and `output: "standalone"` — SW File Not Served in Docker
 
 **What goes wrong:**
-Implementing both "stop generation" (client abort) and "resume after reconnect" in the same streaming path causes them to break each other. If resume is enabled, aborting the stream leaves the backend in an inconsistent state where it continues generating but the client has moved on. Partial responses are not persisted.
+Forge uses `output: "standalone"` in `next.config.ts` for Docker deployment. In standalone mode, Next.js copies only the files needed to run the server into `.next/standalone/`. Files in `public/` are NOT automatically included — they must be copied manually in the Dockerfile. If `sw.js` is placed in `public/` (the standard location), it will exist in development but be missing in the Docker production image. The browser silently fails to register the service worker, and the PWA appears to work (manifest loads, install prompt shows) but has no offline capability.
 
 **Why it happens:**
-Abort and resume are architecturally incompatible unless the generation is decoupled from the client connection. Most implementations couple generation to the HTTP request lifecycle: when the client disconnects, the backend stops generating. This makes abort easy but resume impossible.
+The Next.js standalone output docs explicitly state that `public/` and `.next/static/` must be copied manually. Developers test PWA features in `next dev` where `public/` is served directly, assume it works, and discover the SW is missing only after Docker deployment.
 
 **How to avoid:**
-- Choose one model: **abort-only** (simpler) or **durable generation** (resilient but complex)
-- For abort-only (recommended for MVP): propagate `AbortSignal` from client through to the upstream LLM request; use `try/except asyncio.CancelledError` in FastAPI generator; persist whatever was generated up to the abort point
-- Never implement `resume: true` alongside client-side abort without decoupling generation to a background task
-- Persist partial response chunks to the DB as they arrive (not only on completion) so aborted messages are recoverable
-
-**Warning signs:**
-- Stop button works but the backend keeps running (consuming GPU/API budget)
-- Resumed page loads show empty messages for in-progress generations
-- "Regenerate" creates a duplicate message instead of replacing the partial one
-
-**Phase to address:** Streaming infrastructure + chat message persistence (Phase 1)
-
----
-
-### Pitfall 4: SQLite "Database Is Locked" Under Async Concurrency
-
-**What goes wrong:**
-`sqlite3.OperationalError: database is locked` errors appear intermittently in FastAPI, especially during periods where streaming writes (persisting chunks) overlap with read requests (loading conversation history). The app works fine in single-request testing but fails under moderate load.
-
-**Why it happens:**
-SQLite allows only one writer at a time. FastAPI is async and can process multiple requests concurrently. Without WAL mode, any read blocks on pending writes. With WAL mode, multiple readers are allowed concurrent with one writer, but checkpointing can still briefly block readers. Async SQLAlchemy with SQLite uses `aiosqlite` under the hood — connection pool misconfiguration (sharing connections across coroutines) is a common source.
-
-**How to avoid:**
-- Enable WAL mode immediately: `PRAGMA journal_mode=WAL;` on connection creation
-- Set busy timeout: `PRAGMA busy_timeout=5000;` (5 seconds) to retry rather than fail instantly
-- Use `create_async_engine` with `aiosqlite` and `NullPool` (or `StaticPool` for single-file SQLite) — never share connections across async tasks
-- Use `check_same_thread=False` only if you understand the implications; prefer one connection per request
-- For Forge's use case (single user, low concurrency), WAL + busy_timeout should be sufficient. Document the path to PostgreSQL for multi-user v2.
-- Keep write operations short; never hold a write transaction open during LLM streaming
-
-**Warning signs:**
-- Errors appear only under "fast clicking" or parallel tab usage
-- Logs show `OperationalError` with no stack trace pointing to application code
-- Works fine with `pytest` (sequential) but fails with `pytest -n 4` (parallel)
-
-**Phase to address:** Database layer setup (Phase 1, before any feature work)
-
----
-
-### Pitfall 5: ChromaDB Library Mode Data Staleness in Multi-Process Environments
-
-**What goes wrong:**
-When FastAPI runs with multiple workers (e.g., `uvicorn --workers 4` or Gunicorn), ChromaDB in embedded/library mode maintains a separate in-memory index per worker. Worker A adds a document and persists it to disk, but Workers B, C, D never see it — their in-memory state is stale. Queries return outdated results without any error.
-
-**Why it happens:**
-ChromaDB's embedded mode loads the collection into memory when the process starts. It writes to disk but does not signal other processes to reload. This is a fundamental design constraint of embedded/library mode — it is not safe for multi-process use.
-
-**How to avoid:**
-- Run ChromaDB as a standalone HTTP server (`chroma run --path ./chroma_data`) even locally — not in embedded library mode
-- Connect from FastAPI using `chromadb.HttpClient` pointing at the local Chroma server
-- For MVP single-process Uvicorn (`--workers 1`), embedded mode is safe, but document the constraint explicitly
-- Add a health check that validates the Chroma server is reachable at startup
-- Do NOT use `chromadb.Client()` (deprecated library mode) in any environment where worker count may exceed 1
-
-**Warning signs:**
-- Document uploads return 200 but queries don't return the new documents
-- Restarting the server "fixes" retrieval temporarily
-- Results are inconsistent between requests
-
-**Phase to address:** RAG / embedding infrastructure (before file upload feature is built)
-
----
-
-### Pitfall 6: MCP Process Lifecycle Not Managed — Zombie Processes and Resource Leaks
-
-**What goes wrong:**
-MCP servers launched via stdio transport (the most common local transport) are child processes. If the host application crashes, exits abnormally, or the MCP server errors out, the child process can become a zombie or continue consuming resources. When the user reconfigures MCP servers in Settings, old processes are not cleanly terminated before new ones start.
-
-**Why it happens:**
-Developers treat MCP servers as "fire and start" — spawn the process, use it, never implement shutdown. The MCP spec defines a shutdown sequence (close stdin → wait → SIGTERM → SIGKILL) but nothing enforces it. Application restarts during development accumulate orphaned processes.
-
-**How to avoid:**
-- Implement a `McpProcessManager` that tracks all running MCP child processes by server ID
-- On application shutdown: close stdin → wait 5s → send SIGTERM → wait 5s → SIGKILL
-- On Settings reconfiguration: stop old process cleanly before starting replacement
-- Store PID in the database; on startup, check if stale PIDs are still running and kill them
-- Set connection timeouts per the MCP spec; don't let hung requests block indefinitely
-- Use `asyncio.create_subprocess_exec` with explicit stdin/stdout pipes rather than `subprocess.Popen`
-
-**Warning signs:**
-- `ps aux | grep mcp` shows multiple copies of the same server
-- Settings changes don't take effect until restart
-- System RAM climbs after repeated MCP server reconfiguration
-
-**Phase to address:** MCP integration phase (dedicated lifecycle management before tool invocation)
-
----
-
-### Pitfall 7: Alembic + SQLite ALTER TABLE Failures on Schema Changes
-
-**What goes wrong:**
-Alembic-generated migrations work on PostgreSQL but fail silently or with confusing errors on SQLite when they involve column modifications, drops, renames, or constraint changes. SQLite only supports `RENAME TABLE` and `ADD COLUMN` in `ALTER TABLE`. Running a standard Alembic migration that drops a column causes `NotSupportedError`.
-
-**Why it happens:**
-Alembic auto-generates migrations using the database dialect. When configured for SQLite, it should use batch mode, but the default configuration does not enable batch mode automatically. Adding a non-nullable column to a populated table will also fail without a server default.
-
-**How to avoid:**
-- Enable Alembic batch mode for SQLite in `env.py`:
-  ```python
-  with context.begin_transaction():
-      context.run_migrations(render_as_batch=True)
+- In the Dockerfile, explicitly copy `public/` to the standalone output:
+  ```dockerfile
+  COPY --from=builder /app/public ./public
+  COPY --from=builder /app/.next/static ./.next/static
   ```
-- Always provide `server_default` when adding `NOT NULL` columns to existing tables
-- Review auto-generated migrations before applying them — never run `alembic upgrade head` blindly
-- Test migrations against a copy of the production DB, not just an empty one
-- Avoid unnamed constraints (always name CHECK and UNIQUE constraints explicitly)
+- Verify SW registration succeeds in the Docker container by checking `navigator.serviceWorker.controller` in the browser console after deployment.
+- Add a health check or E2E test that verifies `/sw.js` returns 200 with `Content-Type: application/javascript` in the production build.
+- Set `Cache-Control: no-cache, no-store, must-revalidate` on `sw.js` per the Next.js official PWA guide, so browsers always fetch the latest version.
 
 **Warning signs:**
-- `alembic upgrade head` fails on `ALTER TABLE ... DROP COLUMN`
-- Migration works in clean test DB but fails on an existing DB with data
-- Schema drifts silently when developers skip migration and recreate DB
+- PWA installs on desktop/mobile but has no offline capability
+- DevTools > Application > Service Workers shows "No service worker registered"
+- `/sw.js` returns 404 in production but works in development
+- `navigator.serviceWorker` is undefined or registration promise rejects
 
-**Phase to address:** Database setup phase (establish batch mode before first migration)
+**Phase to address:** Phase 1 (Service Worker foundation) + Phase 3 (Docker integration testing)
 
 ---
 
-### Pitfall 8: Markdown Rendering XSS via LLM Output
+### Pitfall 4: Manifest `start_url` and Auth — PWA Opens to Login Screen Every Time
 
 **What goes wrong:**
-The LLM generates response content that includes HTML, JavaScript, or crafted markdown that, when rendered, executes scripts in the user's browser. Since LLM output is inherently untrusted, any markdown renderer that passes raw HTML through is a security hole. This is especially acute when RAG retrieval injects content from user-uploaded files into the context.
+The `manifest.json` sets `start_url: "/"` which maps to the app root. When the PWA is launched from the home screen, the browser opens a fresh context without the auth session. Forge uses in-memory JWT tokens with cookie-based refresh. If the refresh token cookie has `SameSite=Strict` or the cookie domain doesn't match the standalone PWA origin, the refresh call fails silently and the user is redirected to `/login` every time they open the installed app.
 
 **Why it happens:**
-Developers use markdown renderers (react-markdown, marked, markdown-it) with default settings that allow raw HTML passthrough. The assumption is "this is my own assistant, I trust it" — but indirect prompt injection via retrieved documents or tool results can weaponize the output.
+In PWA standalone mode (`display: "standalone"`), the app runs in its own window without a browser URL bar. Cookie behavior can differ from the regular browser context. The `start_url` is loaded fresh on each launch. If session restoration depends on cookies that are not available in the standalone context, auth breaks.
 
 **How to avoid:**
-- Use `react-markdown` with `rehype-sanitize` plugin enabled (enabled is the correct default but verify)
-- Never use `dangerouslySetInnerHTML` for LLM output under any circumstances
-- Disable raw HTML passthrough: `allowDangerousHtml: false` (markdown-it default is safe; react-markdown v6+ is safe by default)
-- For code blocks: use a syntax highlighter that does not eval code (Prism, Shiki — both are safe)
-- Test by injecting `<script>alert(1)</script>` and `[click me](javascript:alert(1))` as LLM responses
+- Set the refresh token cookie with `SameSite=Lax` (not `Strict`) — standalone PWA launches are treated as top-level navigations, which `Lax` allows.
+- Ensure the cookie `Path=/` and `Domain` matches the origin the PWA is served from.
+- Test the PWA install flow end-to-end: install, close, reopen from home screen, verify auth persists without re-login.
+- Consider a `start_url: "/?source=pwa"` to track PWA launches and debug auth issues.
+- The protected layout's `useEffect` redirect to `/login` must handle the brief `isLoading: true` state gracefully — show a splash screen, not a flash of the login page.
 
 **Warning signs:**
-- Code blocks display but also execute in browser
-- Links in responses can navigate to `javascript:` URIs
-- Using `marked` without DOMPurify (marked allows raw HTML by default)
+- PWA always shows login screen on launch from home screen
+- Auth works in browser tab but not in installed PWA
+- Refresh token cookie is present in browser DevTools but absent in standalone PWA DevTools
+- Brief flash of login page before auth restores
 
-**Phase to address:** Chat UI foundation (before first streaming response is rendered)
+**Phase to address:** Phase 2 (Manifest and install flow) — requires auth integration testing
 
 ---
 
-### Pitfall 9: LLM API Keys Stored in Frontend or Logged in Plain Text
+### Pitfall 5: Cache Invalidation After Deployment — Users Stuck on Old App Version
 
 **What goes wrong:**
-API keys for remote LLM providers (OpenAI, Anthropic, etc.) configured in the Settings page are either: (a) stored in browser localStorage where they can be read by XSS, (b) sent in request bodies that get logged by FastAPI's default request logging, or (c) stored in the SQLite DB without encryption.
+After deploying a new version, the service worker serves the old cached app shell. The user sees the old UI, old JavaScript bundles, and potentially old API client code that is incompatible with the new backend. The service worker update cycle requires: (1) browser detects new SW, (2) new SW installs in background, (3) old SW still controls the page, (4) user closes ALL tabs, (5) new SW activates. Most users never close all tabs — they are stuck on the old version indefinitely.
 
 **Why it happens:**
-Settings forms are wired to backend storage through the standard CRUD path. Developers don't think about the difference between configuration data and secret data. FastAPI's `--log-level debug` logs full request bodies.
+Service worker lifecycle is intentionally conservative — it never disrupts the current page. Developers assume "deploy = update" but the SW lifecycle means the old version can persist for days or weeks. This is catastrophic for Forge because a backend API change (new endpoint, changed schema) will break the cached frontend.
 
 **How to avoid:**
-- Store API keys in the SQLite DB with at minimum environment-variable-keyed encryption (Fernet symmetric encryption is sufficient for single-user local deployment)
-- Never return the full API key in any API response; return a masked value (`sk-...abc123`) for display
-- Disable request body logging for provider configuration endpoints
-- Use `SecretStr` from Pydantic for any field containing credentials — it prevents accidental logging
-- Set `HTTPOnly` and `SameSite=Strict` on session cookies
+- Implement a `skipWaiting()` + `clients.claim()` pattern so the new SW activates immediately.
+- Show an "Update available" toast/banner when a new SW is detected (`registration.onupdatefound`). On user click, call `registration.waiting.postMessage({ type: 'SKIP_WAITING' })` and reload.
+- In the SW install handler, call `self.skipWaiting()` to bypass waiting.
+- In the SW activate handler, call `self.clients.claim()` to take control of all open tabs.
+- Register the SW with `updateViaCache: 'none'` (already recommended in Next.js official PWA guide) so the browser always checks for a new SW file.
+- Version the SW file name or include a version constant that changes with each build.
 
 **Warning signs:**
-- API key is visible in browser DevTools → Application → Local Storage
-- FastAPI logs show full request body on settings update
-- `GET /api/providers/1` returns `{"api_key": "sk-full-key-here"}`
+- Users report seeing old UI after deployment
+- API errors appear because cached frontend calls endpoints that changed
+- DevTools > Application > Service Workers shows "waiting to activate"
+- Hard refresh (Ctrl+Shift+R) fixes the issue (bypasses SW)
 
-**Phase to address:** Settings + Auth phase (before provider configuration is built)
+**Phase to address:** Phase 2 (SW update strategy) — MUST be implemented before first production deployment
+
+---
+
+### Pitfall 6: Offline Shell Shows UI But All Actions Fail Silently
+
+**What goes wrong:**
+The app shell (layout, sidebar, header) loads from cache when offline, giving the impression the app works. But every action — sending a message, loading conversations, changing settings — fails because the backend API is unreachable. Without explicit offline detection and user feedback, the app appears frozen or broken. Users type a message, hit send, and nothing happens.
+
+**Why it happens:**
+The app shell pattern caches the HTML/JS/CSS but not the data. Forge is entirely API-dependent — every screen requires a successful API call. Developers implement the offline shell as a "PWA checkbox" without considering the user experience when the shell loads but data doesn't.
+
+**How to avoid:**
+- Add an online/offline status indicator in the AppHeader component using `navigator.onLine` and the `online`/`offline` window events.
+- When offline, disable the chat input and show "You are offline — messages will be sent when connection is restored" instead of silently failing.
+- Wrap `apiFetch` with offline detection — if `!navigator.onLine`, reject immediately with a user-friendly error rather than letting the request timeout.
+- Do NOT attempt to queue messages for later sending in v2.1 — this adds massive complexity (conflict resolution, ordering). Simply show a clear offline state.
+- Cache the conversation list for read-only browsing when offline (optional, low priority).
+
+**Warning signs:**
+- App shell loads offline but every interaction shows a spinner that never resolves
+- Error messages say "Failed to fetch" instead of "You are offline"
+- Send button appears active when offline
+- No visual distinction between online and offline states
+
+**Phase to address:** Phase 2 (Offline UX) — after app shell caching is working
+
+---
+
+### Pitfall 7: `next-pwa` Is Abandoned — Using It Causes Build Failures with Turbopack
+
+**What goes wrong:**
+Developers find `next-pwa` as the top search result for "Next.js PWA" and install it. The package has not been maintained since 2023, does not support Next.js 15+, and requires webpack. Since Next.js 16 defaults to Turbopack, `next-pwa` causes build failures or requires falling back to webpack (losing Turbopack performance benefits). Even if it builds, it generates a service worker with aggressive caching defaults that will trigger Pitfalls 1, 2, and 5.
+
+**Why it happens:**
+`next-pwa` has 3.5k+ GitHub stars and dominates SEO for "Next.js PWA" searches. Many tutorials and blog posts still recommend it. The package README does not clearly state it is unmaintained.
+
+**How to avoid:**
+- Use either Serwist (`@serwist/next`) or a hand-written service worker. For Forge's needs (simple app shell caching + bypass for API calls), a hand-written `public/sw.js` following the Next.js official PWA guide is simpler and more controllable.
+- If using Serwist: it works with Turbopack for production builds but requires `--webpack` flag for local development PWA testing. This is acceptable.
+- Avoid any package that wraps Workbox with aggressive defaults — Forge needs precise control over what gets cached and what doesn't.
+
+**Warning signs:**
+- `npm install next-pwa` followed by build errors mentioning webpack plugins
+- Service worker precaches every page and API route
+- `next build` takes significantly longer after adding the PWA plugin
+- Unexplained caching behavior that didn't exist before
+
+**Phase to address:** Phase 0 (Technology selection) — decide before writing any code
+
+---
+
+### Pitfall 8: Cross-Origin API Requests Bypass Service Worker Entirely
+
+**What goes wrong:**
+Forge's frontend (port 3000) makes API calls to the backend (port 8000). These are cross-origin requests. Service workers can only intercept requests within their scope (same origin by default). The SW registered at `localhost:3000/sw.js` with `scope: '/'` does not intercept requests to `localhost:8000`. This is actually CORRECT behavior for Forge (we don't want the SW intercepting API calls — see Pitfall 1). But developers who try to add offline API response caching via the SW will find it silently doesn't work for cross-origin requests.
+
+**Why it happens:**
+Forge deliberately uses direct browser-to-backend API calls (not proxied through Next.js) for SSE streaming performance. The `API_BASE` is constructed from `window.location.hostname:8000`. This cross-origin architecture is good for streaming but means the SW cannot intercept, cache, or modify API requests even if you wanted it to.
+
+**How to avoid:**
+- Accept this as a feature, not a bug. Document that the SW handles ONLY the app shell (HTML/JS/CSS/images) and the backend API is always network-only.
+- If offline API response caching is ever needed (future milestone), it must be done in the application layer (IndexedDB via the React app), not in the service worker.
+- Do not attempt to proxy API calls through Next.js route handlers just to make them same-origin for SW caching — this reintroduces the SSE buffering problem from the v1.0 pitfalls.
+
+**Warning signs:**
+- Developer adds Workbox runtime caching for `/api/*` routes but it never caches anything
+- Network tab shows API requests not going through the SW
+- Offline mode caches the shell but has zero API data available
+
+**Phase to address:** Phase 1 (Architecture decisions) — understand this constraint before designing the caching strategy
 
 ---
 
@@ -237,14 +220,12 @@ Settings forms are wired to backend storage through the standard CRUD path. Deve
 
 | Shortcut | Immediate Benefit | Long-term Cost | When Acceptable |
 |----------|-------------------|----------------|-----------------|
-| Single Uvicorn worker (`--workers 1`) | Avoids ChromaDB multi-process staleness | Cannot scale; single point of failure | MVP only; document the constraint |
-| Polling instead of SSE for trace events | Simpler to implement | Latency spikes, extra DB load | Never; SSE is not harder here |
-| Hardcoded model name in orchestrator | Faster first demo | Breaks on provider switch | Never |
-| Skip WAL mode for SQLite | Nothing needed upfront | Intermittent lock errors in production | Never; WAL is a one-liner |
-| Embedded ChromaDB (`chromadb.Client()`) | No separate process | Data staleness with multiple workers | Only if single-process guarantee is enforced |
-| No abort signal propagation to LLM | Simpler code | Backend keeps generating after client stops | Never; wastes GPU/API budget |
-| Store API keys in plain text | No encryption setup needed | Security risk, user trust | Never |
-| Skip Alembic batch mode | Shorter setup | First schema change breaks migration | Never |
+| Skip SW update UX (auto skipWaiting) | No toast/banner to build | Users may see jarring mid-session reload; no control over when update happens | MVP only; add user-controlled update prompt before production |
+| Cache all static assets with no size limit | Everything loads offline | Cache storage grows unbounded; mobile devices with limited storage may evict the SW cache | Never; set a max cache size (50MB) and use LRU eviction |
+| Use `next-pwa` for "quick setup" | Faster initial implementation | Abandoned package; webpack dependency; aggressive caching defaults | Never; use hand-written SW or Serwist |
+| Skip offline detection in UI | Less code to write | Users confused when actions fail silently offline | Never; even a simple `navigator.onLine` check is sufficient |
+| Hardcode manifest icons as static files | No build pipeline needed | Cannot adapt icons for different themes (light/dark) or platform requirements | MVP acceptable; dynamic manifest can come later |
+| Register SW in development mode | Easier to test PWA features | SW caches dev bundles; HMR breaks; confusing stale code during development | Never; only register in production builds |
 
 ---
 
@@ -252,14 +233,14 @@ Settings forms are wired to backend storage through the standard CRUD path. Deve
 
 | Integration | Common Mistake | Correct Approach |
 |-------------|----------------|------------------|
-| Ollama | Assume tool calling works for all models | Check `ollama list` model capabilities; only llama3.1+ supports tools reliably |
-| LM Studio | Try to use streaming tool calls | LM Studio does not support streaming tool calls; use non-streaming for tool use |
-| vLLM | Forget `--enable-auto-tool-choice` flag | Add the flag with the correct parser (`hermes`, `llama3`, `mistral`) at server startup |
-| ChromaDB HTTP server | Skip health check on startup | Add a `/api/v1/heartbeat` check; fail loudly if Chroma is unreachable |
-| FastAPI SSE + nginx | Double CORS headers | Remove CORS headers from nginx if FastAPI already adds them |
-| MCP stdio server | Not handling server crash | Implement restart-with-backoff logic in `McpProcessManager` |
-| SQLite + async SQLAlchemy | `check_same_thread` errors | Use `aiosqlite` driver with `NullPool`; do not share connections across coroutines |
-| Next.js App Router + SSE | Response buffered until completion | Set `X-Accel-Buffering: no`, disable `compress`, use `ReadableStream` |
+| SW + SSE streaming (fetch+ReadableStream) | SW fetch handler intercepts the stream request, buffering or corrupting it | Bypass all backend API URLs in the SW fetch handler; never call `respondWith()` for streaming requests |
+| SW + JWT auth (Bearer token in header) | Caching responses keyed by URL only; serving wrong-session data | Never cache authenticated API responses in the SW; cache only static app shell assets |
+| SW + `output: "standalone"` Docker | `public/sw.js` not copied to standalone output | Add explicit `COPY public/ ./public` in Dockerfile after standalone build |
+| Manifest + cookie-based auth refresh | `SameSite=Strict` cookie not sent on PWA standalone launch | Use `SameSite=Lax` for refresh token cookie; test in installed PWA context |
+| SW + Next.js `compress: false` | SW caches uncompressed responses; no gzip benefit | Add compression at the reverse proxy level (nginx) rather than Next.js; SW caches compressed responses transparently |
+| SW + HMR in development | Service worker caches dev bundles; hot reload stops working | Conditionally register SW only in production: `if (process.env.NODE_ENV === 'production')` |
+| Manifest + dynamic `API_BASE` | Manifest `start_url` hardcoded but API base is dynamic (hostname-based) | Set `start_url: "/"` and let the app resolve API_BASE at runtime from `window.location` |
+| SW update + backend deployment | Frontend SW update and backend deploy happen at different times; version mismatch | Version the API; or deploy frontend and backend atomically via docker-compose |
 
 ---
 
@@ -267,12 +248,10 @@ Settings forms are wired to backend storage through the standard CRUD path. Deve
 
 | Trap | Symptoms | Prevention | When It Breaks |
 |------|----------|------------|----------------|
-| Synchronous DB writes in streaming path | Each token write blocks the next | Use async writes; batch chunk persistence; write at turn completion if latency allows | From first concurrent user |
-| Full conversation history loaded on every request | Context window bloat; slow response start | Load only last N turns; use summary/compression for long histories | At ~50 messages per conversation |
-| ChromaDB querying without metadata filters | Retrieves from all documents globally | Always filter by `user_id`, `session_id`, or `collection_id` in metadata | At ~1000+ documents |
-| Fetching all conversations for sidebar | Sidebar load time grows linearly | Paginate conversation list; use cursor-based pagination | At ~500+ conversations |
-| Trace events stored as individual DB rows per token | DB fills with millions of tiny rows | Aggregate trace events; store as JSON blob per message turn | At ~1000 messages |
-| No SSE connection keepalive/heartbeat | Connection drops silently after 30-60s idle | Send `event: ping\ndata: {}\n\n` every 15 seconds | On any proxy with connection timeout |
+| Precaching all Next.js pages and chunks | Initial SW install downloads 10MB+ of JS bundles; slow on mobile | Only precache the app shell (layout, critical CSS); let other routes load on-demand with runtime caching | Immediately on mobile with slow connections |
+| No cache size limit on runtime cache | Cache Storage grows unbounded as user navigates | Set `maxEntries` (e.g., 50) and `maxAgeSeconds` (e.g., 7 days) on runtime cache strategies | After weeks of use; mobile storage pressure |
+| SW fetch handler runs on every request | Even for requests the SW should not handle, the fetch event fires and adds overhead | Use `return` (no `respondWith()`) for requests outside SW scope; Chrome optimizes this as a "no-op fetch handler" | Noticeable on pages with 50+ resource requests |
+| Caching Next.js `_next/static/` chunks with wrong strategy | Immutable hashed chunks cached as `NetworkFirst` (unnecessary network check) | Use `CacheFirst` for `_next/static/` (immutable, hash-versioned); `NetworkFirst` only for HTML navigation | Every page load wastes a network round-trip |
 
 ---
 
@@ -280,13 +259,11 @@ Settings forms are wired to backend storage through the standard CRUD path. Deve
 
 | Mistake | Risk | Prevention |
 |---------|------|------------|
-| Raw HTML in markdown renderer (react-markdown without sanitize) | XSS via LLM output or injected documents | Use `rehype-sanitize`; verify default config is safe |
-| API key returned in GET /providers response | Key leaks in logs, browser history | Return masked key; never return full secret |
-| MCP tool invocation without input validation | Arbitrary command execution via crafted tool arguments | Validate all MCP tool inputs against schema before execution |
-| Indirect prompt injection via RAG documents | Uploaded file instructs LLM to exfiltrate data | Display source provenance; consider a warning when LLM output diverges from expected patterns |
-| `uploads/` directory served statically via Next.js | Direct file access bypasses auth | Serve file downloads through controlled FastAPI endpoint with session check |
-| Session token in URL query parameter | Token visible in server logs, referrer headers | Use HTTPOnly cookie only; never put token in URL |
-| No rate limiting on chat endpoint | API budget exhaustion if session is hijacked | Add per-session rate limiting even for single-user (defense in depth) |
+| SW serves cached login page when session is valid | User sees login flash; may re-enter credentials unnecessarily | Never cache `/login` route; always fetch from network |
+| SW caches responses containing JWT tokens | Token persists in Cache Storage even after logout | Never cache API responses; clear all caches on logout via `postMessage` |
+| `sw.js` served without proper headers | Browser caches old SW indefinitely; security patches don't reach users | Set `Cache-Control: no-cache, no-store, must-revalidate` on `/sw.js` response |
+| Manifest `scope` too broad | SW controls paths it shouldn't (e.g., admin panels, different apps on same domain) | Set `scope: "/"` only if the PWA is the sole app on the origin |
+| SW fetch handler leaks auth headers to third-party domains | If SW intercepts cross-origin requests and adds Authorization header | Only add auth headers for same-origin requests; bypass cross-origin entirely |
 
 ---
 
@@ -294,28 +271,27 @@ Settings forms are wired to backend storage through the standard CRUD path. Deve
 
 | Pitfall | User Impact | Better Approach |
 |---------|-------------|-----------------|
-| No loading state between send and first token | User thinks request was lost; double-submits | Show "thinking..." indicator immediately on send; disable input |
-| Streaming stops but no visual indicator | User waits indefinitely after network drop | Add timeout detection; show "connection lost — retry?" after 30s of silence |
-| Trace panel open by default per message | Clutters chat; distracting for normal use | Trace collapsed by default; expand icon on hover |
-| Error messages show raw API error body | Confusing to user; may expose internal details | Map provider errors to human-readable messages |
-| No scroll-lock during streaming | User reading earlier context gets auto-scrolled away | Detect manual scroll-up; pause auto-scroll until user scrolls back to bottom |
-| Conversation list has no visual active state | User loses track of current conversation | Highlight active conversation; persist last-viewed conversation across reload |
-| File upload succeeds but retrieval never uses it | User uploads files expecting them in context | Show source citations prominently; add "files used" section to RAG responses |
+| Install prompt shown immediately on first visit | Annoying; user hasn't experienced the app yet | Show install prompt after 3+ sessions or after user demonstrates engagement (e.g., sends first message) |
+| No visual feedback during SW update | User doesn't know an update is available; stuck on old version | Show a dismissible banner: "New version available — tap to update" |
+| PWA installed but no offline indicator | User opens PWA offline, app shell loads, then confusion when nothing works | Show offline banner in AppHeader; disable send button; show last-cached conversation list if available |
+| Splash screen missing or wrong colors | App feels unfinished on iOS/Android launch | Set `background_color` and `theme_color` in manifest to match Forge's theme; provide proper splash icons |
+| iOS "Add to Home Screen" instructions not shown | iOS users don't know how to install (no automatic install prompt on Safari) | Detect iOS Safari + not-standalone; show manual installation instructions |
+| PWA opens in both browser tab and standalone | Confusing; notifications go to wrong instance | Use `getInstalledRelatedApps()` API to detect installation; suggest opening in installed app |
 
 ---
 
 ## "Looks Done But Isn't" Checklist
 
-- [ ] **Streaming:** Verify tokens arrive incrementally in production (with compression enabled, behind nginx) — not just on localhost
-- [ ] **Tool calling:** Verify tool calls work with each configured provider type — Ollama, LM Studio, and vLLM all behave differently
-- [ ] **Abort:** Verify stop button terminates the upstream LLM request, not just the client's listener
-- [ ] **MCP servers:** Verify old MCP processes are killed when servers are reconfigured in Settings
-- [ ] **File upload + RAG:** Verify recently uploaded files are findable immediately (not cached from before upload)
-- [ ] **SQLite migrations:** Verify `alembic upgrade head` works on a DB with existing data, not just an empty DB
-- [ ] **API key masking:** Verify GET /providers never returns full API key in any response
-- [ ] **Markdown XSS:** Verify `<script>alert(1)</script>` in LLM response does not execute
-- [ ] **Session persistence:** Verify trace events are reloaded correctly when resuming a conversation
-- [ ] **ChromaDB multi-worker:** Verify document retrieval returns newly uploaded files when running with multiple Uvicorn workers (or document the single-worker constraint)
+- [ ] **SSE Streaming:** Verify token-by-token streaming still works after SW registration — test in both browser tab and installed PWA
+- [ ] **Auth Persistence:** Install PWA, close it completely, reopen from home screen — verify user is still logged in without re-entering credentials
+- [ ] **SW in Docker:** Build Docker image, run container, verify `/sw.js` returns 200 and SW registers successfully
+- [ ] **Cache Isolation:** Log in, browse conversations, log out, log back in — verify no stale data from previous session
+- [ ] **SW Update:** Deploy a new version, open existing PWA — verify update notification appears and app updates on action
+- [ ] **Offline State:** Disconnect network, open PWA — verify clear offline indicator and no silent failures
+- [ ] **iOS Install:** Test on iOS Safari — verify install instructions appear and installed PWA works correctly
+- [ ] **Theme Consistency:** Verify manifest `theme_color` and `background_color` match both light and dark theme modes
+- [ ] **No Dev SW:** Verify service worker is NOT registered during `next dev` — only in production builds
+- [ ] **AbortController:** Verify stop-generation button works in PWA standalone mode (not just browser tab)
 
 ---
 
@@ -323,14 +299,14 @@ Settings forms are wired to backend storage through the standard CRUD path. Deve
 
 | Pitfall | Recovery Cost | Recovery Steps |
 |---------|---------------|----------------|
-| SSE buffering discovered in production | LOW | Add missing headers + disable Next.js compression; redeploy |
-| Provider API divergence causes tool call failures | MEDIUM | Build adapter layer; add per-provider capability flags; re-test all providers |
-| "Database is locked" in production | LOW | Enable WAL mode + busy_timeout; redeploy; no data loss |
-| ChromaDB stale data in multi-worker | MEDIUM | Switch to ChromaDB HTTP server mode; update all client code to use `HttpClient` |
-| MCP zombie processes | LOW | Add process manager with PID tracking; kill orphans on startup |
-| API key stored in plain text | MEDIUM | Migrate keys to encrypted storage; force re-entry from Settings page |
-| XSS via markdown | MEDIUM | Add rehype-sanitize to renderer; audit all places where LLM output is rendered |
-| Alembic migration failure on schema change | MEDIUM | Enable batch mode; write corrective migration manually; test against data snapshot |
+| SW intercepts SSE streams | LOW | Add URL bypass in SW fetch handler; redeploy SW; users get fix on next visit |
+| Cached auth data served cross-session | MEDIUM | Clear all caches in SW activate handler; send LOGOUT message to SW on auth state change; force SW update |
+| SW missing in Docker | LOW | Fix Dockerfile COPY command; rebuild and redeploy image |
+| Users stuck on old version | MEDIUM | Deploy SW with `skipWaiting()` + `clients.claim()`; or instruct users to clear site data in browser settings |
+| PWA always shows login screen | LOW | Change cookie `SameSite` to `Lax`; verify cookie domain; redeploy backend |
+| Offline UI shows broken state | LOW | Add `navigator.onLine` check and offline banner; purely frontend change |
+| `next-pwa` causing build failures | MEDIUM | Remove package; replace with hand-written SW or Serwist; rewrite SW configuration |
+| Unbounded cache growth | LOW | Add `maxEntries` and `maxAgeSeconds` to cache strategies; SW update clears old caches |
 
 ---
 
@@ -338,43 +314,32 @@ Settings forms are wired to backend storage through the standard CRUD path. Deve
 
 | Pitfall | Prevention Phase | Verification |
 |---------|------------------|--------------|
-| SSE buffering in Next.js | Phase 1: Streaming infrastructure | Integration test: verify token-by-token delivery through nginx in CI |
-| Provider API divergence | Phase 1-2: Provider adapter layer | Test matrix: run tool call test against each provider type |
-| Streaming abort/resume incompatibility | Phase 1: Chat core | Test: stop mid-stream; verify backend terminates; verify partial message saved |
-| SQLite "database is locked" | Phase 1: DB setup | Concurrent write test in pytest; verify no lock errors under 5 parallel requests |
-| ChromaDB library mode staleness | Phase 3-4: RAG/embedding | Test: upload file, immediately query in separate process; verify result appears |
-| MCP process lifecycle | Phase 4-5: MCP integration | Test: reconfigure MCP server; verify no zombie processes via `ps` |
-| Alembic SQLite batch mode | Phase 1: DB setup | Test: run migration with existing data rows; verify no `NotSupportedError` |
-| Markdown XSS | Phase 2: Chat UI | Automated test: render `<script>alert(1)</script>` as LLM output; assert no execution |
-| API key plain text storage | Phase 2: Settings + Auth | Audit: GET /providers response must not contain full key; DB must not store plaintext |
-| Trace event DB bloat | Phase 2-3: Trace persistence | Test: generate 100-message conversation; verify trace storage is bounded |
+| SW intercepts SSE (Pitfall 1) | Phase 1: SW foundation | E2E test: send chat message with SW active; verify tokens arrive incrementally |
+| Cached auth data (Pitfall 2) | Phase 1: SW caching architecture | Test: login, browse, logout, login as same user; verify no stale data |
+| SW missing in Docker (Pitfall 3) | Phase 1: SW foundation + Dockerfile | CI test: build Docker image; curl `/sw.js`; verify 200 response |
+| Manifest + auth (Pitfall 4) | Phase 2: Manifest and install UX | Manual test: install PWA, close, reopen; verify no login prompt |
+| Cache invalidation (Pitfall 5) | Phase 2: SW update strategy | Test: deploy new version; verify update banner appears in existing PWA |
+| Offline UX (Pitfall 6) | Phase 2: Offline experience | Test: disconnect network; verify offline banner and disabled input |
+| next-pwa abandoned (Pitfall 7) | Phase 0: Technology decision | N/A — decision point, not code verification |
+| Cross-origin SW scope (Pitfall 8) | Phase 1: Architecture documentation | Code review: verify SW fetch handler does not attempt to cache cross-origin requests |
 
 ---
 
 ## Sources
 
-- [Server-Sent Events don't work in Next API routes — vercel/next.js Discussion #48427](https://github.com/vercel/next.js/discussions/48427)
-- [Fixing Slow SSE Streaming in Next.js and Vercel (Jan 2026)](https://medium.com/@oyetoketoby80/fixing-slow-sse-server-sent-events-streaming-in-next-js-and-vercel-99f42fbdb996)
-- [FastAPI streaming response not decoded in chunks with compression · Issue #62201 · vercel/next.js](https://github.com/vercel/next.js/issues/62201)
-- [Stop streaming response when client disconnects · fastapi Discussion #7572](https://github.com/fastapi/fastapi/discussions/7572)
-- [How to Build LLM Streams That Survive Reconnects, Refreshes, and Crashes — Upstash](https://upstash.com/blog/resumable-llm-streams)
-- [AI SDK UI: Chatbot Resume Streams — Vercel AI SDK](https://ai-sdk.dev/docs/ai-sdk-ui/chatbot-resume-streams)
-- [Ollama vs vLLM vs LM Studio for local LLM (2026)](https://www.clawctl.com/blog/ollama-vs-vllm-vs-lm-studio)
-- [LM Studio Production Guide: Local OpenAI-Compatible LLMs](https://www.cohorte.co/blog/lm-studio-production-grade-local-llm-server)
-- [Real Faults in Model Context Protocol (MCP) Software — arXiv 2603.05637](https://arxiv.org/html/2603.05637v1)
-- [Six Fatal Flaws of the Model Context Protocol (MCP)](https://www.scalifiai.com/blog/model-context-protocol-flaws-2025)
-- [MCP Servers in Production — systemprompt.io](https://systemprompt.io/guides/mcp-servers-production-deployment)
-- [MCP Lifecycle — Model Context Protocol Specification](https://modelcontextprotocol.io/specification/2025-03-26/basic/lifecycle)
-- [SQLite concurrent writes and "database is locked" errors — tenthousandmeters](https://tenthousandmeters.com/blog/sqlite-concurrent-writes-and-database-is-locked-errors/)
-- [SQLite connection pool pitfalls: 5 major misunderstandings](https://www.jtti.cc/supports/3154.html)
-- [ChromaDB Library Mode = Stale RAG Data — Never Use It in Production](https://medium.com/@okekechimaobi/chromadb-library-mode-stale-rag-data-never-use-it-in-production-heres-why-b6881bd63067)
-- [Road To Production — Chroma Cookbook](https://cookbook.chromadb.dev/running/road-to-prod/)
-- [Alembic Batch Migrations for SQLite — Official Docs](https://alembic.sqlalchemy.org/en/latest/batch.html)
-- [Fixing ALTER TABLE errors with Flask-Migrate and SQLite — Miguel Grinberg](https://blog.miguelgrinberg.com/post/fixing-alter-table-errors-with-flask-migrate-and-sqlite)
-- [Solving CORS Issues Between Next.js and Python Backend (Nov 2025)](https://medium.com/@nmlmadhusanka/solving-cors-issues-between-next-js-and-python-backend-93800a4ee633)
-- [Handling State Update Race Conditions in React — CyberArk Engineering](https://medium.com/cyberark-engineering/handling-state-update-race-conditions-in-react-8e6c95b74c17)
-- [LLM Security in 2025: Risks, Examples, and Best Practices — Oligo Security](https://www.oligo.security/academy/llm-security-in-2025-risks-examples-and-best-practices)
+- [Guides: PWAs - Next.js Official Documentation](https://nextjs.org/docs/app/guides/progressive-web-apps) — verified 2026-03-22, covers manifest, SW registration, security headers, and recommends Serwist for offline
+- [Should EventSource bypass service worker interception? - W3C ServiceWorker Issue #885](https://github.com/w3c/ServiceWorker/issues/885) — confirms SSE/SW interaction challenges
+- [ServiceWorker lifetime and respondWith() with ReadableStream - W3C Issue #882](https://github.com/w3c/ServiceWorker/issues/882) — confirms stream lifetime issues in SW
+- [Service worker cache messing with authentication - OHIF/Viewers Issue #1691](https://github.com/OHIF/Viewers/issues/1691) — real-world example of cached auth data causing issues
+- [Authenticated PWA? - W3C ServiceWorker Issue #909](https://github.com/w3c/ServiceWorker/issues/909) — discussion of auth challenges in PWAs
+- [When 'Just Refresh' Doesn't Work: Taming PWA Cache Behavior - Infinity Interactive](https://iinteractive.com/resources/blog/taming-pwa-cache-behavior) — SW update lifecycle problems
+- [index.html cached in a bad state when service worker updates - Workbox Issue #1528](https://github.com/GoogleChrome/workbox/issues/1528) — cache invalidation failure case
+- [Building a PWA in Next.js with Serwist (Next-PWA Successor)](https://javascript.plainenglish.io/building-a-progressive-web-app-pwa-in-next-js-with-serwist-next-pwa-successor-94e05cb418d7) — Serwist as modern replacement for next-pwa
+- [Dynamically Generating PWA App Icons in Next.js 16 with Serwist - Aurora Scharff](https://aurorascharff.no/posts/dynamically-generating-pwa-app-icons-nextjs-16-serwist/) — confirms Serwist works with Next.js 16 + Turbopack
+- [A guide to Service Workers - pitfalls and best practices - The Codeship](https://www.thecodeship.com/web-development/guide-service-worker-pitfalls-best-practices/) — general SW pitfalls reference
+- [Stuff I wish I'd known sooner about service workers - Rich Harris](https://gist.github.com/Rich-Harris/fd6c3c73e6e707e312d7c5d7d0f3b2f9) — practical SW lessons from Svelte creator
+- Forge codebase analysis: `frontend/next.config.ts` (standalone output, compress: false), `frontend/src/hooks/useChat.ts` (fetch+ReadableStream SSE), `frontend/src/lib/api.ts` (cross-origin API calls to port 8000), `frontend/src/context/auth-context.tsx` (in-memory JWT + cookie refresh)
 
 ---
-*Pitfalls research for: local-first AI assistant (Forge)*
-*Researched: 2026-03-21*
+*Pitfalls research for: PWA integration into Forge AI chat app*
+*Researched: 2026-03-22*
