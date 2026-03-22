@@ -9,10 +9,10 @@ Requirements for PWA milestone. Each maps to roadmap phases.
 
 ### PWA Foundation
 
-- [ ] **PWA-01**: App serves a valid web app manifest with name, icons, theme color, display: standalone, and start_url
-- [ ] **PWA-02**: Service worker registers on app load with Serwist, caches app shell assets, and bypasses /api/* routes (preserving SSE streaming)
+- [x] **PWA-01**: App serves a valid web app manifest with name, icons, theme color, display: standalone, and start_url
+- [x] **PWA-02**: Service worker registers on app load with Serwist, caches app shell assets, and bypasses /api/* routes (preserving SSE streaming)
 - [ ] **PWA-03**: App provides PWA icons (192x192, 512x512 PNG) and Apple touch icon
-- [ ] **PWA-04**: Offline fallback page displays when user has no network connection
+- [x] **PWA-04**: Offline fallback page displays when user has no network connection
 - [ ] **PWA-05**: Docker standalone build includes service worker and manifest in output
 
 ### Install UX
@@ -58,10 +58,10 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| PWA-01 | Phase 12 | Pending |
-| PWA-02 | Phase 12 | Pending |
+| PWA-01 | Phase 12 | Complete |
+| PWA-02 | Phase 12 | Complete |
 | PWA-03 | Phase 12 | Pending |
-| PWA-04 | Phase 12 | Pending |
+| PWA-04 | Phase 12 | Complete |
 | PWA-05 | Phase 12 | Pending |
 | INST-01 | Phase 13 | Pending |
 | INST-02 | Phase 13 | Pending |
