@@ -32,7 +32,7 @@ export default function ProtectedLayout({
   return (
     <div className="flex h-screen flex-col">
       <AppHeader />
-      <div className="flex-1 overflow-hidden">{children}</div>
+      <div className="flex-1 overflow-auto">{children}</div>
     </div>
   );
 }

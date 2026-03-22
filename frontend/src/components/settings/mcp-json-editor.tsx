@@ -1,12 +1,12 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Loader2 } from "lucide-react";
 import { useAuth } from "@/context/auth-context";
 import { importMcpServers } from "@/lib/mcp-api";
-import type { McpBulkImportResponse } from "@/lib/mcp-api";
+import type { McpBulkImportResponse, McpServerRead } from "@/lib/mcp-api";
 
 const EXAMPLE_JSON = `{
   "mcpServers": {
@@ -26,11 +26,31 @@ const EXAMPLE_JSON = `{
 
 interface McpJsonEditorProps {
   onImportSuccess: () => void;
+  servers?: McpServerRead[];
 }
 
-export function McpJsonEditor({ onImportSuccess }: McpJsonEditorProps) {
+function serversToJson(servers: McpServerRead[]): string {
+  if (servers.length === 0) return "";
+  const mcpServers: Record<string, Record<string, unknown>> = {};
+  for (const s of servers) {
+    const entry: Record<string, unknown> = {};
+    if (s.transport_type === "stdio") {
+      if (s.command) entry.command = s.command;
+      if (s.args.length > 0) entry.args = s.args;
+    } else {
+      if (s.url) entry.url = s.url;
+      entry.type = s.transport_type;
+    }
+    if (Object.keys(s.env_vars).length > 0) entry.env = s.env_vars;
+    mcpServers[s.name] = entry;
+  }
+  return JSON.stringify({ mcpServers }, null, 2);
+}
+
+export function McpJsonEditor({ onImportSuccess, servers = [] }: McpJsonEditorProps) {
   const { token } = useAuth();
-  const [jsonText, setJsonText] = useState("");
+  const initialJson = useMemo(() => serversToJson(servers), [servers]);
+  const [jsonText, setJsonText] = useState(initialJson);
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<McpBulkImportResponse | null>(null);
   const [isImporting, setIsImporting] = useState(false);

@@ -150,7 +150,7 @@ export function McpServersSection() {
       </div>
 
       {viewMode === "json" ? (
-        <McpJsonEditor onImportSuccess={handleImportSuccess} />
+        <McpJsonEditor onImportSuccess={handleImportSuccess} servers={servers ?? []} />
       ) : (
         <>
           {showAddForm && (
