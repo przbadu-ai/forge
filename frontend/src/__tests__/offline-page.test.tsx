@@ -18,7 +18,8 @@ describe("Offline fallback page", () => {
     const { container } = render(<OfflinePage />);
     const allElements = container.querySelectorAll("*");
     for (const el of allElements) {
-      expect(el.className).toBe("");
+      // SVG elements have SVGAnimatedString for className; check attribute instead
+      expect(el.getAttribute("class")).toBeNull();
     }
   });
 
