@@ -55,9 +55,9 @@ Requirements for initial release. Each maps to roadmap phases.
 
 ### Skills
 
-- [ ] **SKILL-01**: User can view and enable/disable skills in Settings
-- [ ] **SKILL-02**: Skill triggers and outputs appear in message execution trace
-- [ ] **SKILL-03**: Skill execution metadata persists in the database
+- [x] **SKILL-01**: User can view and enable/disable skills in Settings
+- [x] **SKILL-02**: Skill triggers and outputs appear in message execution trace
+- [x] **SKILL-03**: Skill execution metadata persists in the database
 
 ### Retrieval & Files
 
@@ -169,9 +169,9 @@ Which phases cover which requirements. Updated during roadmap creation.
 | MCP-03 | Phase 8: MCP Integration | Complete |
 | MCP-04 | Phase 8: MCP Integration | Complete |
 | MCP-05 | Phase 8: MCP Integration | Complete |
-| SKILL-01 | Phase 9: Skills Integration | Pending |
-| SKILL-02 | Phase 9: Skills Integration | Pending |
-| SKILL-03 | Phase 9: Skills Integration | Pending |
+| SKILL-01 | Phase 9: Skills Integration | Complete |
+| SKILL-02 | Phase 9: Skills Integration | Complete |
+| SKILL-03 | Phase 9: Skills Integration | Complete |
 | RAG-01 | Phase 10: File Upload + RAG | Pending |
 | RAG-02 | Phase 10: File Upload + RAG | Pending |
 | RAG-03 | Phase 10: File Upload + RAG | Pending |
