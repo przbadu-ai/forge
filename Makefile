@@ -40,6 +40,19 @@ setup-env:
 	@if [ ! -f .env ]; then \
 		cp .env.example .env; \
 		echo "✓ Created .env from .env.example"; \
+		printf "Generate a random SECRET_KEY? [Y/n] "; \
+		read -r answer; \
+		if [ "$$answer" != "n" ] && [ "$$answer" != "N" ]; then \
+			secret=$$(openssl rand -hex 32 2>/dev/null || python3 -c "import secrets; print(secrets.token_hex(32))"); \
+			if [ "$$(uname)" = "Darwin" ]; then \
+				sed -i '' "s|^SECRET_KEY=.*|SECRET_KEY=$$secret|" .env; \
+			else \
+				sed -i "s|^SECRET_KEY=.*|SECRET_KEY=$$secret|" .env; \
+			fi; \
+			echo "✓ Generated SECRET_KEY"; \
+		else \
+			echo "⚠ Skipped — update SECRET_KEY in .env before production use"; \
+		fi; \
 	else \
 		echo "✓ .env already exists"; \
 	fi
