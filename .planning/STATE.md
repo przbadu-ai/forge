@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v2.1
 milestone_name: PWA
 status: unknown
-stopped_at: Completed 12-00-PLAN.md (PWA test scaffolds)
-last_updated: "2026-03-22T11:05:22.158Z"
+stopped_at: Completed 12-01-PLAN.md
+last_updated: "2026-03-22T11:09:58.263Z"
 last_activity: 2026-03-22
 progress:
   total_phases: 3
   completed_phases: 0
   total_plans: 3
-  completed_plans: 1
+  completed_plans: 2
 ---
 
 # Project State
@@ -25,7 +25,7 @@ See: .planning/PROJECT.md (updated 2026-03-22)
 ## Current Position
 
 Phase: 12 (PWA Foundation) — EXECUTING
-Plan: 2 of 3
+Plan: 3 of 3
 
 ## Performance Metrics
 
@@ -48,6 +48,7 @@ Plan: 2 of 3
 
 *Updated after each plan completion*
 | Phase 12 P00 | 1min | 2 tasks | 4 files |
+| Phase 12 P01 | 5min | 3 tasks | 13 files |
 
 ## Accumulated Context
 
@@ -61,6 +62,8 @@ Recent decisions affecting current work:
 - [v2.1 Research]: CSS-first responsive design with Tailwind breakpoints, JS only for drawer toggle
 - [v2.1 Research]: SW registration in dedicated client component inside providers.tsx, never in root layout
 - [Phase 12]: TDD RED phase: test scaffolds created before implementation in separate Wave 0 plan
+- [Phase 12]: Use matcher property (not urlPattern) for Serwist v9 RuntimeCaching API
+- [Phase 12]: Force --webpack flag for Next.js builds since Serwist requires webpack plugin for SW generation
 
 ### Pending Todos
 
@@ -75,6 +78,6 @@ None yet.
 ## Session Continuity
 
 Last activity: 2026-03-22
-Last session: 2026-03-22T11:05:22.155Z
-Stopped at: Completed 12-00-PLAN.md (PWA test scaffolds)
+Last session: 2026-03-22T11:09:58.260Z
+Stopped at: Completed 12-01-PLAN.md
 Resume file: None

@@ -50,7 +50,7 @@ Full details: `.planning/milestones/v1.0-ROADMAP.md`
 
 Plans:
 - [x] 12-00-PLAN.md -- Wave 0 test scaffolds (manifest, SW registration, offline page, E2E)
-- [ ] 12-01-PLAN.md -- Serwist integration, manifest, icons, SW source, and config wiring
+- [x] 12-01-PLAN.md -- Serwist integration, manifest, icons, SW source, and config wiring
 - [ ] 12-02-PLAN.md -- Offline fallback page and PWA browser verification
 
 ### Phase 13: Install UX and Offline Experience
@@ -101,6 +101,6 @@ Phases execute in numeric order: 12 -> 13 -> 14
 | 9. Skills Integration | v1.0 | 1/1 | Complete | 2026-03-22 |
 | 10. File Upload + RAG | v1.0 | 1/1 | Complete | 2026-03-22 |
 | 11. Settings + Quality Gate | v1.0 | 2/2 | Complete | 2026-03-22 |
-| 12. PWA Foundation | v2.1 | 1/3 | In Progress|  |
+| 12. PWA Foundation | v2.1 | 2/3 | In Progress|  |
 | 13. Install UX + Offline | v2.1 | 0/? | Not started | - |
 | 14. Responsive Layout | v2.1 | 0/? | Not started | - |
