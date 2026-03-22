@@ -1,8 +1,7 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter
 
 from app.api.v1.auth import router as auth_router
 from app.api.v1.chat import router as chat_router
-from app.api.v1.deps import get_current_user
 from app.api.v1.files import router as files_router
 from app.api.v1.health_diagnostics import router as diagnostics_router
 from app.api.v1.settings.embeddings import router as embeddings_settings_router
@@ -11,7 +10,6 @@ from app.api.v1.settings.mcp_servers import router as mcp_servers_router
 from app.api.v1.settings.providers import router as providers_router
 from app.api.v1.settings.skills import router as skills_router
 from app.api.v1.settings.web_search import router as web_search_settings_router
-from app.models.user import User
 
 api_router = APIRouter()
 
@@ -32,7 +30,5 @@ api_router.include_router(diagnostics_router, prefix="/diagnostics", tags=["diag
 
 
 @api_router.get("/health")
-async def health_check(
-    current_user: User = Depends(get_current_user),
-) -> dict[str, str]:
+async def health_check() -> dict[str, str]:
     return {"status": "ok", "service": "forge-api"}
