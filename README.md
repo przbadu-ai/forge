@@ -82,3 +82,32 @@ make frontend-test    # vitest
 | `make migrate-down`      | Roll back one Alembic migration              |
 | `make build`             | Production build of the frontend             |
 | `make setup`             | Full project setup (deps, env, migrations)   |
+
+## Docker
+
+Run the full application without installing Python or Node.js locally.
+
+### Quick Start
+
+```bash
+cp .env.example .env   # configure your LLM endpoint and secret key
+docker compose up --build
+```
+
+The backend will be available at `http://localhost:8000` and the frontend at `http://localhost:3000`.
+
+### Production
+
+```bash
+docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --build
+```
+
+This adds restart policies (`unless-stopped`) and log rotation.
+
+### Data Persistence
+
+SQLite database and uploaded files are stored in Docker named volumes (`backend-data` and `backend-uploads`) and persist across container restarts.
+
+### Environment
+
+Copy `.env.example` to `.env` and configure before running. The `DATABASE_URL` is overridden inside the container to use the mounted volume path.
