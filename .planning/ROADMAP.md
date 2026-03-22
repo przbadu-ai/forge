@@ -21,7 +21,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [ ] **Phase 7: Orchestration Loop** - Custom agentic loop, executor interfaces, timeout/retry, run state
 - [ ] **Phase 8: MCP Integration** - MCP server registration, process manager, tool invocation, trace visibility
 - [x] **Phase 9: Skills Integration** - Skills settings, skill execution, trace visibility, persistence (completed 2026-03-22)
-- [ ] **Phase 10: File Upload + RAG** - File upload, chunking, embedding, ChromaDB retrieval, source attribution
+- [x] **Phase 10: File Upload + RAG** - File upload, chunking, embedding, ChromaDB retrieval, source attribution (completed 2026-03-22)
 - [ ] **Phase 11: Settings Completion + Quality Gate** - Embedding/reranker/web search settings, health diagnostics, full test coverage, CI
 
 ## Phase Details
@@ -187,10 +187,10 @@ Plans:
   3. Assistant responses to document questions show source attribution: file name, chunk preview, and relevance score
   4. User can view and delete uploaded files from the file management UI
   5. User can configure the embedding model endpoint and reranker endpoint in Settings
-**Plans:** 1 plans
+**Plans:** 1/1 plans complete
 
 Plans:
-- [ ] 10-01-PLAN.md — Close remaining gaps: persist source citations to DB for conversation resume, wire reranker into retrieval pipeline, add tests
+- [x] 10-01-PLAN.md — Close remaining gaps: persist source citations to DB for conversation resume, wire reranker into retrieval pipeline, add tests
 
 ### Phase 11: Settings Completion + Quality Gate
 **Goal**: All settings are complete, health diagnostics work, and every shipped feature has passing tests with CI green
@@ -229,5 +229,5 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6 -> 7 -> 8 -> 9 -> 10
 | 7. Orchestration Loop | 2/2 | Complete | 2026-03-21 |
 | 8. MCP Integration | 1/2 | In progress | - |
 | 9. Skills Integration | 1/1 | Complete   | 2026-03-22 |
-| 10. File Upload + RAG | 0/1 | Not started | - |
+| 10. File Upload + RAG | 1/1 | Complete   | 2026-03-22 |
 | 11. Settings Completion + Quality Gate | 0/6 | Not started | - |

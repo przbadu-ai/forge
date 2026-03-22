@@ -61,17 +61,17 @@ Requirements for initial release. Each maps to roadmap phases.
 
 ### Retrieval & Files
 
-- [ ] **RAG-01**: User can upload files (PDF, DOCX, TXT, MD) for document Q&A
-- [ ] **RAG-02**: Uploaded files are chunked and embedded into ChromaDB
-- [ ] **RAG-03**: Chat retrieves relevant chunks from ChromaDB when files are referenced
-- [ ] **RAG-04**: Assistant responses show source attribution (file name, chunk preview, relevance score)
-- [ ] **RAG-05**: User can view and manage uploaded files
+- [x] **RAG-01**: User can upload files (PDF, DOCX, TXT, MD) for document Q&A
+- [x] **RAG-02**: Uploaded files are chunked and embedded into ChromaDB
+- [x] **RAG-03**: Chat retrieves relevant chunks from ChromaDB when files are referenced
+- [x] **RAG-04**: Assistant responses show source attribution (file name, chunk preview, relevance score)
+- [x] **RAG-05**: User can view and manage uploaded files
 
 ### Settings
 
 - [x] **SET-01**: User can configure LLM providers with multiple profiles (base URL, API key, models)
-- [ ] **SET-02**: User can configure embedding model endpoint
-- [ ] **SET-03**: User can configure reranker endpoint
+- [x] **SET-02**: User can configure embedding model endpoint
+- [x] **SET-03**: User can configure reranker endpoint
 - [ ] **SET-04**: User can configure web search providers (SearXNG, Exa)
 - [x] **SET-05**: User can test-connection for any configured endpoint
 - [ ] **SET-06**: Health diagnostics panel shows status of all configured integrations
@@ -172,13 +172,13 @@ Which phases cover which requirements. Updated during roadmap creation.
 | SKILL-01 | Phase 9: Skills Integration | Complete |
 | SKILL-02 | Phase 9: Skills Integration | Complete |
 | SKILL-03 | Phase 9: Skills Integration | Complete |
-| RAG-01 | Phase 10: File Upload + RAG | Pending |
-| RAG-02 | Phase 10: File Upload + RAG | Pending |
-| RAG-03 | Phase 10: File Upload + RAG | Pending |
-| RAG-04 | Phase 10: File Upload + RAG | Pending |
-| RAG-05 | Phase 10: File Upload + RAG | Pending |
-| SET-02 | Phase 10: File Upload + RAG | Pending |
-| SET-03 | Phase 10: File Upload + RAG | Pending |
+| RAG-01 | Phase 10: File Upload + RAG | Complete |
+| RAG-02 | Phase 10: File Upload + RAG | Complete |
+| RAG-03 | Phase 10: File Upload + RAG | Complete |
+| RAG-04 | Phase 10: File Upload + RAG | Complete |
+| RAG-05 | Phase 10: File Upload + RAG | Complete |
+| SET-02 | Phase 10: File Upload + RAG | Complete |
+| SET-03 | Phase 10: File Upload + RAG | Complete |
 | SET-04 | Phase 11: Settings Completion + Quality Gate | Pending |
 | SET-06 | Phase 11: Settings Completion + Quality Gate | Pending |
 | TEST-01 | Phase 11: Settings Completion + Quality Gate | Pending |
