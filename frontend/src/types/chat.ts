@@ -22,6 +22,7 @@ export interface Message {
   role: "user" | "assistant" | "system";
   content: string;
   trace_data: string | null;
+  sources?: SourceCitationData[] | null;
   created_at: string;
 }
 

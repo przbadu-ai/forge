@@ -191,6 +191,7 @@ async def get_messages(
             role=m.role,
             content=m.content,
             trace_data=m.trace_data,
+            sources=json.loads(m.source_data) if m.source_data else None,
             created_at=m.created_at,
         )
         for m in messages
@@ -390,6 +391,7 @@ async def _token_generator(
             role="assistant",
             content=full_content,
             trace_data=tracer.to_json(),
+            source_data=json.dumps(sources_meta) if sources_meta else None,
         )
         session.add(assistant_msg)
         await session.execute(

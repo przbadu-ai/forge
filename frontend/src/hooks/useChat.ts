@@ -71,6 +71,15 @@ export function useChat({
             }
           });
           setMessageTraces(traces);
+
+          // Restore sources from loaded messages
+          const sourcesMap: Record<number, SourceCitationData[]> = {};
+          msgs.forEach((m) => {
+            if (m.role === "assistant" && m.sources && m.sources.length > 0) {
+              sourcesMap[m.id] = m.sources;
+            }
+          });
+          setMessageSources(sourcesMap);
         }
       })
       .catch(() => {

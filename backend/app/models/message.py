@@ -15,4 +15,5 @@ class Message(SQLModel, table=True):
     role: str = Field(max_length=20)  # "user" | "assistant" | "system"
     content: str = Field(default="")
     trace_data: str | None = Field(default=None, sa_column_kwargs={"nullable": True})
+    source_data: str | None = Field(default=None, sa_column_kwargs={"nullable": True})
     created_at: datetime = Field(default_factory=_utcnow)
