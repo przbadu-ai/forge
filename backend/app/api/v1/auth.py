@@ -58,7 +58,7 @@ async def login(
         key="forge_refresh",
         value=refresh_token,
         httponly=True,
-        path="/api/v1/auth/refresh",
+        path="/",
         samesite="lax",
         secure=False,
     )
@@ -110,7 +110,7 @@ async def logout() -> JSONResponse:
     response = JSONResponse(content={"message": "Logged out"})
     response.delete_cookie(
         key="forge_refresh",
-        path="/api/v1/auth/refresh",
+        path="/",
     )
     return response
 

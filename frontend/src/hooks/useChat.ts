@@ -5,7 +5,7 @@ import { useAuth } from "@/context/auth-context";
 import { getMessages, regenerateLastMessage } from "@/lib/chat-api";
 import type { Message, SourceCitationData, SSEEvent, TraceEvent } from "@/types/chat";
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
+import { API_BASE } from "@/lib/api";
 
 interface UseChatOptions {
   conversationId: number | null;

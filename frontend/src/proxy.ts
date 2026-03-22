@@ -1,28 +1,10 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 
-const PUBLIC_PATHS = ["/login"];
-
-export function proxy(req: NextRequest): NextResponse {
-  const { pathname } = req.nextUrl;
-
-  // Allow public paths through
-  if (PUBLIC_PATHS.some((p) => pathname.startsWith(p))) {
-    return NextResponse.next();
-  }
-
-  // Check for refresh cookie — if present, user may have a valid session.
-  // Proxy cannot call FastAPI here (would add latency on every route).
-  // We do an optimistic check: if forge_refresh cookie exists, let through.
-  // The AuthContext in the browser will call /auth/refresh on mount to verify.
-  // If that fails, the (protected) layout redirects to /login client-side.
-  const refreshCookie = req.cookies.get("forge_refresh");
-  if (!refreshCookie) {
-    const loginUrl = new URL("/login", req.nextUrl);
-    loginUrl.searchParams.set("from", pathname);
-    return NextResponse.redirect(loginUrl);
-  }
-
+// Auth is handled client-side by the (protected)/layout.tsx AuthProvider.
+// The proxy passes all requests through — cookie-based server-side checks
+// don't work with cross-origin auth (backend on :8000, frontend on :3000).
+export async function proxy(req: NextRequest): Promise<NextResponse> {
   return NextResponse.next();
 }
 

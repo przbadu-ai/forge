@@ -1,6 +1,15 @@
 // apiFetch wraps fetch with Authorization header injection.
 // Token is passed in explicitly (consumers get it from useAuth).
-const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
+// Use the same hostname as the browser (enables LAN access) with backend port 8000.
+function getApiBase(): string {
+  if (process.env.NEXT_PUBLIC_API_URL) return process.env.NEXT_PUBLIC_API_URL;
+  if (typeof window !== "undefined") {
+    return `${window.location.protocol}//${window.location.hostname}:8000`;
+  }
+  return "http://localhost:8000";
+}
+
+export const API_BASE = getApiBase();
 
 export async function apiFetch(
   path: string,

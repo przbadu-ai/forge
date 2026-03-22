@@ -1,5 +1,5 @@
 .PHONY: setup backend-setup frontend-setup \
-        dev backend-dev frontend-dev \
+        dev kill-ports backend-dev frontend-dev \
         test backend-test frontend-test \
         lint backend-lint frontend-lint \
         type-check backend-type-check frontend-type-check \
@@ -58,8 +58,13 @@ setup-env:
 	fi
 
 # ── Development ────────────────────────────────────────────
-dev:
+dev: kill-ports
 	make -j 2 backend-dev frontend-dev
+
+kill-ports:
+	@lsof -ti :8000 | xargs kill -9 2>/dev/null || true
+	@lsof -ti :3000 | xargs kill -9 2>/dev/null || true
+	@echo "✓ Ports 8000 and 3000 cleared"
 
 backend-dev:
 	cd backend && uv run uvicorn app.main:app --reload --host 0.0.0.0 --port 8000

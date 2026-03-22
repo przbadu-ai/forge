@@ -1,3 +1,4 @@
+from app.core.config import settings
 import pytest
 from httpx import AsyncClient
 
@@ -5,7 +6,7 @@ from httpx import AsyncClient
 @pytest.mark.asyncio
 async def test_login_success(client: AsyncClient) -> None:
     resp = await client.post(
-        "/api/v1/auth/login", json={"username": "admin", "password": "changeme"}
+        "/api/v1/auth/login", json={"username": settings.admin_username, "password": settings.admin_password}
     )
     assert resp.status_code == 200
     data = resp.json()
@@ -36,7 +37,7 @@ async def test_login_unknown_user(client: AsyncClient) -> None:
 async def test_refresh_success(client: AsyncClient) -> None:
     # Login first to get refresh cookie
     login_resp = await client.post(
-        "/api/v1/auth/login", json={"username": "admin", "password": "changeme"}
+        "/api/v1/auth/login", json={"username": settings.admin_username, "password": settings.admin_password}
     )
     assert login_resp.status_code == 200
 
@@ -70,7 +71,7 @@ async def test_refresh_no_cookie(client: AsyncClient) -> None:
 @pytest.mark.asyncio
 async def test_logout(client: AsyncClient) -> None:
     # Login first
-    await client.post("/api/v1/auth/login", json={"username": "admin", "password": "changeme"})
+    await client.post("/api/v1/auth/login", json={"username": settings.admin_username, "password": settings.admin_password})
     # Logout
     resp = await client.post("/api/v1/auth/logout")
     assert resp.status_code == 200

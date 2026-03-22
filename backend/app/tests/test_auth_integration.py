@@ -1,3 +1,4 @@
+from app.core.config import settings
 """
 Integration tests for auth token lifecycle:
 - Full login -> protected call -> refresh -> protected call cycle
@@ -16,7 +17,7 @@ async def test_full_token_lifecycle(client: AsyncClient) -> None:
     # 1. Login
     login_resp = await client.post(
         "/api/v1/auth/login",
-        json={"username": "admin", "password": "changeme"},
+        json={"username": settings.admin_username, "password": settings.admin_password},
     )
     assert login_resp.status_code == 200
     access_token = login_resp.json()["access_token"]
@@ -65,7 +66,7 @@ async def test_logout_invalidates_session(client: AsyncClient) -> None:
     # Login
     login_resp = await client.post(
         "/api/v1/auth/login",
-        json={"username": "admin", "password": "changeme"},
+        json={"username": settings.admin_username, "password": settings.admin_password},
     )
     assert login_resp.status_code == 200
 
