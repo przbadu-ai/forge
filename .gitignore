@@ -42,3 +42,15 @@ Thumbs.db
 .vscode/
 *.swp
 *.swo
+backend/.pytest_cache/
+backend/.mypy_cache/
+backend/.ruff_cache/
+backend/chroma_data/
+backend/uploads/
+backend/forge.db
+backend/forge.db-shm
+backend/forge.db-wal
+backend/forge.db-journal
+backend/forge.db-lock
+backend/forge.db-lock-shm
+backend/forge.db-lock-wal
