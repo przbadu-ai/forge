@@ -187,15 +187,10 @@ Plans:
   3. Assistant responses to document questions show source attribution: file name, chunk preview, and relevance score
   4. User can view and delete uploaded files from the file management UI
   5. User can configure the embedding model endpoint and reranker endpoint in Settings
-**Plans:** 3 plans
+**Plans:** 1 plans
 
 Plans:
-- [ ] 10-01: FilePipeline backend (async upload endpoint, chunking, sentence-transformers embedding, ChromaDB HTTP client storage)
-- [ ] 10-02: RAG retrieval (query embedding, ChromaDB top-K retrieval, context injection into orchestrator, source metadata)
-- [ ] 10-03: File management (file list endpoint, delete endpoint, file management UI)
-- [ ] 10-04: Source attribution UI (per-message source citations: file name, chunk preview, similarity score)
-- [ ] 10-05: Embedding + reranker settings (Settings UI for embedding model endpoint, reranker endpoint)
-- [ ] 10-06: RAG tests (FilePipeline, retrieval accuracy, source attribution, ChromaDB integration tests)
+- [ ] 10-01-PLAN.md — Close remaining gaps: persist source citations to DB for conversation resume, wire reranker into retrieval pipeline, add tests
 
 ### Phase 11: Settings Completion + Quality Gate
 **Goal**: All settings are complete, health diagnostics work, and every shipped feature has passing tests with CI green
@@ -234,5 +229,5 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6 -> 7 -> 8 -> 9 -> 10
 | 7. Orchestration Loop | 2/2 | Complete | 2026-03-21 |
 | 8. MCP Integration | 1/2 | In progress | - |
 | 9. Skills Integration | 1/1 | Complete   | 2026-03-22 |
-| 10. File Upload + RAG | 0/6 | Not started | - |
+| 10. File Upload + RAG | 0/1 | Not started | - |
 | 11. Settings Completion + Quality Gate | 0/6 | Not started | - |
