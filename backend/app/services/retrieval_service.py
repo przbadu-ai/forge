@@ -3,10 +3,54 @@
 import logging
 from typing import Any
 
+import httpx
+
 from app.core.chroma_client import query_documents
 from app.services.embedding_service import embed_texts
 
 logger = logging.getLogger(__name__)
+
+
+async def rerank(
+    query: str,
+    documents: list[dict[str, Any]],
+    reranker_base_url: str,
+    reranker_model: str,
+    top_k: int = 5,
+) -> list[dict[str, Any]]:
+    """Re-rank documents using an external reranker endpoint.
+
+    Calls POST {reranker_base_url}/rerank with the query and document texts.
+    Falls back to original order on any error.
+    """
+    try:
+        async with httpx.AsyncClient(timeout=10.0) as client:
+            resp = await client.post(
+                f"{reranker_base_url.rstrip('/')}/rerank",
+                json={
+                    "model": reranker_model,
+                    "query": query,
+                    "documents": [d["chunk_text"] for d in documents],
+                    "top_n": top_k,
+                },
+            )
+            resp.raise_for_status()
+            data = resp.json()
+
+            # Response format: {"results": [{"index": 0, "relevance_score": 0.95}, ...]}
+            results = data.get("results", [])
+            reranked: list[dict[str, Any]] = []
+            for r in results:
+                idx = r.get("index", 0)
+                if idx < len(documents):
+                    doc = documents[idx].copy()
+                    doc["score"] = round(float(r.get("relevance_score", doc.get("score", 0))), 4)
+                    reranked.append(doc)
+
+            return reranked[:top_k] if reranked else documents[:top_k]
+    except Exception:
+        logger.warning("Reranker call failed, falling back to original ranking")
+        return documents[:top_k]
 
 
 async def retrieve(
@@ -15,6 +59,8 @@ async def retrieve(
     file_ids: list[int] | None = None,
     embedding_base_url: str | None = None,
     embedding_model: str | None = None,
+    reranker_base_url: str | None = None,
+    reranker_model: str | None = None,
 ) -> list[dict[str, Any]]:
     """Retrieve relevant document chunks for a query.
 
@@ -57,6 +103,16 @@ async def retrieve(
                 "score": round(score, 4),
                 "chunk_index": meta.get("chunk_index", 0),
             }
+        )
+
+    # Optionally re-rank results using external reranker
+    if reranker_base_url and reranker_model and sources:
+        sources = await rerank(
+            query=query,
+            documents=sources,
+            reranker_base_url=reranker_base_url,
+            reranker_model=reranker_model,
+            top_k=top_k,
         )
 
     return sources

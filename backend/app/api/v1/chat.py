@@ -290,6 +290,8 @@ async def _token_generator(
                     top_k=5,
                     embedding_base_url=emb_base,
                     embedding_model=emb_model,
+                    reranker_base_url=app_settings_row.reranker_base_url if app_settings_row else None,
+                    reranker_model=app_settings_row.reranker_model if app_settings_row else None,
                 )
 
                 if sources_data:
