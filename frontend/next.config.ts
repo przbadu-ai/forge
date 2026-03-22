@@ -15,6 +15,7 @@ const withSerwist = withSerwistInit({
 const nextConfig: NextConfig = {
   output: "standalone",
   compress: false, // Required: prevents Next.js from buffering SSE responses
+  turbopack: {}, // Silence Turbopack warning; Serwist uses webpack plugin for SW generation
   async headers() {
     return [
       {

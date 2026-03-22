@@ -17,12 +17,12 @@ const serwist = new Serwist({
   navigationPreload: true,
   runtimeCaching: [
     {
-      urlPattern: /\/api\/.*/,
+      matcher: /\/api\/.*/,
       handler: new NetworkOnly(),
       method: "GET",
     },
     {
-      urlPattern: /\/api\/.*/,
+      matcher: /\/api\/.*/,
       handler: new NetworkOnly(),
       method: "POST",
     },
