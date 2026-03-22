@@ -52,7 +52,7 @@ class Orchestrator:
         schemas = list(BUILTIN_TOOL_SCHEMAS) + list(self.extra_tool_schemas)
         return schemas if schemas else None
 
-    async def _llm_call_with_retry(
+    async def _llm_stream_with_retry(
         self,
         client: AsyncOpenAI,
         model: str,
@@ -61,7 +61,7 @@ class Orchestrator:
         max_tokens: int,
         tools: list[dict[str, Any]] | None = None,
     ) -> Any:
-        """Call the LLM with retry and exponential backoff on timeout."""
+        """Call the LLM with stream=True and retry with exponential backoff on timeout."""
         delays = [1.0, 2.0, 4.0]
         last_error: Exception | None = None
 
@@ -72,15 +72,16 @@ class Orchestrator:
                     "messages": messages,
                     "temperature": temperature,
                     "max_tokens": max_tokens,
+                    "stream": True,
                 }
                 if tools:
                     kwargs["tools"] = tools
 
-                response = await asyncio.wait_for(
+                stream = await asyncio.wait_for(
                     client.chat.completions.create(**kwargs),
                     timeout=self.timeout,
                 )
-                return response
+                return stream
             except TimeoutError as e:
                 last_error = e
                 if attempt < self.max_retries:
@@ -115,7 +116,7 @@ class Orchestrator:
                 tools = self._build_tool_schemas()
 
                 try:
-                    response = await self._llm_call_with_retry(
+                    stream = await self._llm_stream_with_retry(
                         client, model, current_messages, temperature, max_tokens, tools=tools
                     )
                 except TimeoutError:
@@ -128,37 +129,63 @@ class Orchestrator:
                     yield self._sse({"type": "error", "message": error_msg})
                     return
 
-                choice = response.choices[0]
-                finish_reason = choice.finish_reason
+                # Consume the stream, accumulating content and tool calls
+                content = ""
+                finish_reason: str | None = None
+                # tool_calls_acc: dict of index -> {id, function: {name, arguments}}
+                tool_calls_acc: dict[int, dict[str, Any]] = {}
 
-                if finish_reason == "tool_calls" or (
-                    hasattr(choice.message, "tool_calls")
-                    and choice.message.tool_calls
-                    and finish_reason != "stop"
-                ):
-                    # Append the assistant message with tool calls to history
+                async for chunk in stream:
+                    if not chunk.choices:
+                        continue
+                    delta = chunk.choices[0].delta
+                    chunk_finish = chunk.choices[0].finish_reason
+
+                    if chunk_finish:
+                        finish_reason = chunk_finish
+
+                    # Accumulate text content and yield tokens immediately
+                    if delta.content:
+                        content += delta.content
+                        yield self._sse({"type": "token", "delta": delta.content})
+
+                    # Accumulate tool call deltas
+                    if delta.tool_calls:
+                        for tc_delta in delta.tool_calls:
+                            idx = tc_delta.index
+                            if idx not in tool_calls_acc:
+                                tool_calls_acc[idx] = {
+                                    "id": tc_delta.id or "",
+                                    "type": "function",
+                                    "function": {"name": "", "arguments": ""},
+                                }
+                            acc = tool_calls_acc[idx]
+                            if tc_delta.id:
+                                acc["id"] = tc_delta.id
+                            if tc_delta.function:
+                                if tc_delta.function.name:
+                                    acc["function"]["name"] += tc_delta.function.name
+                                if tc_delta.function.arguments:
+                                    acc["function"]["arguments"] += tc_delta.function.arguments
+
+                # Decide path based on accumulated result
+                has_tool_calls = bool(tool_calls_acc)
+
+                if has_tool_calls and finish_reason != "stop":
+                    # Tool calls path — dispatch tools and loop
+                    tool_calls_list = [tool_calls_acc[i] for i in sorted(tool_calls_acc)]
                     assistant_msg: dict[str, Any] = {
                         "role": "assistant",
-                        "content": choice.message.content or "",
-                        "tool_calls": [
-                            {
-                                "id": tc.id,
-                                "type": "function",
-                                "function": {
-                                    "name": tc.function.name,
-                                    "arguments": tc.function.arguments,
-                                },
-                            }
-                            for tc in choice.message.tool_calls
-                        ],
+                        "content": content,
+                        "tool_calls": tool_calls_list,
                     }
                     current_messages.append(assistant_msg)
 
                     # Process each tool call
-                    for tc in choice.message.tool_calls:
-                        tool_name = tc.function.name
+                    for tc in tool_calls_list:
+                        tool_name = tc["function"]["name"]
                         try:
-                            tool_input = json.loads(tc.function.arguments)
+                            tool_input = json.loads(tc["function"]["arguments"])
                         except (json.JSONDecodeError, TypeError):
                             tool_input = {}
 
@@ -197,7 +224,7 @@ class Orchestrator:
                             current_messages.append(
                                 {
                                     "role": "tool",
-                                    "tool_call_id": tc.id,
+                                    "tool_call_id": tc["id"],
                                     "content": json.dumps({"error": error_msg}),
                                 }
                             )
@@ -221,7 +248,7 @@ class Orchestrator:
                         current_messages.append(
                             {
                                 "role": "tool",
-                                "tool_call_id": tc.id,
+                                "tool_call_id": tc["id"],
                                 "content": (
                                     json.dumps(tool_output)
                                     if not isinstance(tool_output, str)
@@ -234,13 +261,8 @@ class Orchestrator:
                     continue
 
                 else:
-                    # Text response — final answer
-                    content = choice.message.content or ""
+                    # Text response — final answer (tokens already yielded above)
                     self._final_content = content
-
-                    # Yield content as a single token chunk
-                    if content:
-                        yield self._sse({"type": "token", "delta": content})
 
                     # Emit token generation trace
                     token_event = self.tracer.emit_token_generation(token_count=len(content))
