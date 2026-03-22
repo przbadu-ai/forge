@@ -96,3 +96,30 @@ export async function toggleMcpServer(
   );
   return handleResponse<McpServerRead>(res);
 }
+
+export interface McpBulkImportResponse {
+  created: number;
+  updated: number;
+  servers: McpServerRead[];
+}
+
+export async function importMcpServers(
+  token: string,
+  data: {
+    mcpServers: Record<
+      string,
+      {
+        command?: string;
+        args?: string[];
+        env?: Record<string, string>;
+        url?: string;
+      }
+    >;
+  }
+): Promise<McpBulkImportResponse> {
+  const res = await apiFetch("/api/v1/settings/mcp-servers/import", token, {
+    method: "POST",
+    body: JSON.stringify(data),
+  });
+  return handleResponse<McpBulkImportResponse>(res);
+}
