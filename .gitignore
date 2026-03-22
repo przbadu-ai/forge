@@ -53,4 +53,5 @@ backend/forge.db-wal
 backend/forge.db-journal
 backend/forge.db-lock
 backend/forge.db-lock-shm
-backend/forge.db-lock-wal
+backend/forge.db-lock-wal.worktrees
+.worktrees/
