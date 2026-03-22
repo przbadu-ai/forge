@@ -90,7 +90,7 @@ export function McpServersSection() {
 
   if (error) {
     return (
-      <div className="text-destructive rounded-md bg-destructive/10 p-4 text-sm">
+      <div className="text-destructive bg-destructive/10 rounded-md p-4 text-sm">
         Failed to load MCP servers: {error.message}
       </div>
     );
@@ -108,7 +108,11 @@ export function McpServersSection() {
           Configure MCP servers to enable external tool use in chat.
         </p>
         <div className="flex items-center gap-2">
-          <div className="flex gap-1 rounded-md border p-1" role="radiogroup" aria-label="View mode">
+          <div
+            className="flex gap-1 rounded-md border p-1"
+            role="radiogroup"
+            aria-label="View mode"
+          >
             <button
               type="button"
               role="radio"
@@ -150,7 +154,10 @@ export function McpServersSection() {
       </div>
 
       {viewMode === "json" ? (
-        <McpJsonEditor onImportSuccess={handleImportSuccess} servers={servers ?? []} />
+        <McpJsonEditor
+          onImportSuccess={handleImportSuccess}
+          servers={servers ?? []}
+        />
       ) : (
         <>
           {showAddForm && (

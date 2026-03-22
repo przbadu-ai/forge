@@ -25,9 +25,8 @@ export function useConversations() {
   const createMutation = useMutation({
     mutationFn: () => createConversationApi(token!),
     onSuccess: (newConversation) => {
-      queryClient.setQueryData<Conversation[]>(
-        CONVERSATIONS_KEY,
-        (old) => (old ? [newConversation, ...old] : [newConversation]),
+      queryClient.setQueryData<Conversation[]>(CONVERSATIONS_KEY, (old) =>
+        old ? [newConversation, ...old] : [newConversation]
       );
     },
   });
@@ -40,7 +39,7 @@ export function useConversations() {
       const previous =
         queryClient.getQueryData<Conversation[]>(CONVERSATIONS_KEY);
       queryClient.setQueryData<Conversation[]>(CONVERSATIONS_KEY, (old) =>
-        old?.map((c) => (c.id === id ? { ...c, title } : c)),
+        old?.map((c) => (c.id === id ? { ...c, title } : c))
       );
       return { previous };
     },
@@ -61,7 +60,7 @@ export function useConversations() {
       const previous =
         queryClient.getQueryData<Conversation[]>(CONVERSATIONS_KEY);
       queryClient.setQueryData<Conversation[]>(CONVERSATIONS_KEY, (old) =>
-        old?.filter((c) => c.id !== id),
+        old?.filter((c) => c.id !== id)
       );
       return { previous };
     },
@@ -82,6 +81,7 @@ export function useConversations() {
     renameConversation: (id: number, title: string) =>
       renameMutation.mutateAsync({ id, title }),
     deleteConversation: (id: number) => deleteMutation.mutateAsync(id),
-    refetch: () => void queryClient.invalidateQueries({ queryKey: CONVERSATIONS_KEY }),
+    refetch: () =>
+      void queryClient.invalidateQueries({ queryKey: CONVERSATIONS_KEY }),
   };
 }

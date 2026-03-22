@@ -77,10 +77,7 @@ export async function updateSkill(
   return handleResponse<SkillRead>(res);
 }
 
-export async function deleteSkill(
-  token: string,
-  id: number
-): Promise<void> {
+export async function deleteSkill(token: string, id: number): Promise<void> {
   const res = await apiFetch(`/api/v1/settings/skills/${id}`, token, {
     method: "DELETE",
   });

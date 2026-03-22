@@ -16,7 +16,12 @@ interface ChatInputProps {
   disabled?: boolean;
 }
 
-export function ChatInput({ onSend, onStop, isStreaming, disabled }: ChatInputProps) {
+export function ChatInput({
+  onSend,
+  onStop,
+  isStreaming,
+  disabled,
+}: ChatInputProps) {
   const { token } = useAuth();
   const [value, setValue] = useState("");
   const [showSlashMenu, setShowSlashMenu] = useState(false);
@@ -51,7 +56,7 @@ export function ChatInput({ onSend, onStop, isStreaming, disabled }: ChatInputPr
       const skillName = slashMatch[1];
       const userMessage = slashMatch[2].trim();
       const skill = enabledSkills.find(
-        (s) => s.name.toLowerCase() === skillName.toLowerCase(),
+        (s) => s.name.toLowerCase() === skillName.toLowerCase()
       );
 
       if (skill?.content) {
@@ -75,16 +80,13 @@ export function ChatInput({ onSend, onStop, isStreaming, disabled }: ChatInputPr
     });
   }, [value, disabled, isStreaming, onSend, enabledSkills]);
 
-  const insertSkillCommand = useCallback(
-    (skill: SkillRead) => {
-      setValue(`/${skill.name} `);
-      setShowSlashMenu(false);
-      setSlashFilter("");
-      setSelectedIndex(0);
-      textareaRef.current?.focus();
-    },
-    [],
-  );
+  const insertSkillCommand = useCallback((skill: SkillRead) => {
+    setValue(`/${skill.name} `);
+    setShowSlashMenu(false);
+    setSlashFilter("");
+    setSelectedIndex(0);
+    textareaRef.current?.focus();
+  }, []);
 
   const handleChange = useCallback(
     (e: React.ChangeEvent<HTMLTextAreaElement>) => {
@@ -102,7 +104,7 @@ export function ChatInput({ onSend, onStop, isStreaming, disabled }: ChatInputPr
         setShowSlashMenu(false);
       }
     },
-    [adjustHeight, enabledSkills.length],
+    [adjustHeight, enabledSkills.length]
   );
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
@@ -116,7 +118,9 @@ export function ChatInput({ onSend, onStop, isStreaming, disabled }: ChatInputPr
       }
       if (e.key === "ArrowUp") {
         e.preventDefault();
-        setSelectedIndex((prev) => (prev - 1 + filtered.length) % filtered.length);
+        setSelectedIndex(
+          (prev) => (prev - 1 + filtered.length) % filtered.length
+        );
         return;
       }
       if (e.key === "Enter" || e.key === "Tab") {
@@ -143,7 +147,10 @@ export function ChatInput({ onSend, onStop, isStreaming, disabled }: ChatInputPr
   useEffect(() => {
     if (!showSlashMenu) return;
     const handleClick = (e: MouseEvent) => {
-      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
+      if (
+        containerRef.current &&
+        !containerRef.current.contains(e.target as Node)
+      ) {
         setShowSlashMenu(false);
       }
     };
@@ -152,7 +159,10 @@ export function ChatInput({ onSend, onStop, isStreaming, disabled }: ChatInputPr
   }, [showSlashMenu]);
 
   return (
-    <div ref={containerRef} className="relative flex items-end gap-2 border-t p-4">
+    <div
+      ref={containerRef}
+      className="relative flex items-end gap-2 border-t p-4"
+    >
       {showSlashMenu && (
         <SlashCommandMenu
           skills={enabledSkills}
@@ -170,7 +180,7 @@ export function ChatInput({ onSend, onStop, isStreaming, disabled }: ChatInputPr
         placeholder="Type a message... (/ for skills)"
         disabled={disabled || isStreaming}
         rows={1}
-        className="flex-1 resize-none rounded-xl border bg-background px-4 py-3 text-sm outline-none placeholder:text-muted-foreground focus:ring-2 focus:ring-ring disabled:opacity-50"
+        className="bg-background placeholder:text-muted-foreground focus:ring-ring flex-1 resize-none rounded-xl border px-4 py-3 text-sm outline-none focus:ring-2 disabled:opacity-50"
       />
       {isStreaming ? (
         <Button

@@ -98,7 +98,7 @@ async def create_skill(
 ) -> SkillRead:
     # Check for duplicate name
     result = await session.execute(
-        select(Skill).where(Skill.name == data.name)
+        select(Skill).where(Skill.name == data.name)  # type: ignore[arg-type]
     )
     if result.scalars().first() is not None:
         raise HTTPException(
@@ -192,7 +192,7 @@ async def sync_skills(
     for disc in discovered:
         # Check if skill with this name already exists
         result = await session.execute(
-            select(Skill).where(Skill.name == disc.name)
+            select(Skill).where(Skill.name == disc.name)  # type: ignore[arg-type]
         )
         existing = result.scalars().first()
 

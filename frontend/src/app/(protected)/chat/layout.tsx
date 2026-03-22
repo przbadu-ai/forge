@@ -14,7 +14,7 @@ export default function ChatLayout({
   return (
     <div className="flex h-full overflow-hidden">
       {/* Sidebar */}
-      <aside className="w-64 shrink-0 border-r bg-muted/30">
+      <aside className="bg-muted/30 w-64 shrink-0 border-r">
         <ConversationList activeId={activeId} />
       </aside>
 

@@ -27,7 +27,11 @@ const TRANSPORT_OPTIONS: { value: McpTransportType; label: string }[] = [
   { value: "streamable_http", label: "Streamable HTTP" },
 ];
 
-export function McpServerForm({ server, onSubmit, onCancel }: McpServerFormProps) {
+export function McpServerForm({
+  server,
+  onSubmit,
+  onCancel,
+}: McpServerFormProps) {
   const isEditing = !!server;
 
   const [name, setName] = useState(server?.name ?? "");
@@ -49,7 +53,8 @@ export function McpServerForm({ server, onSubmit, onCancel }: McpServerFormProps
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const isStdio = transportType === "stdio";
-  const isRemote = transportType === "sse" || transportType === "streamable_http";
+  const isRemote =
+    transportType === "sse" || transportType === "streamable_http";
 
   function validate(): boolean {
     const newErrors: Record<string, string> = {};
@@ -106,7 +111,9 @@ export function McpServerForm({ server, onSubmit, onCancel }: McpServerFormProps
   return (
     <Card>
       <CardHeader>
-        <CardTitle>{isEditing ? "Edit MCP Server" : "Add MCP Server"}</CardTitle>
+        <CardTitle>
+          {isEditing ? "Edit MCP Server" : "Add MCP Server"}
+        </CardTitle>
       </CardHeader>
       <CardContent>
         <form onSubmit={handleSubmit} className="space-y-4">
@@ -126,7 +133,11 @@ export function McpServerForm({ server, onSubmit, onCancel }: McpServerFormProps
 
           <div className="space-y-1.5">
             <Label>Transport Type</Label>
-            <div className="flex gap-1 rounded-md border p-1" role="radiogroup" aria-label="Transport type">
+            <div
+              className="flex gap-1 rounded-md border p-1"
+              role="radiogroup"
+              aria-label="Transport type"
+            >
               {TRANSPORT_OPTIONS.map((opt) => (
                 <button
                   key={opt.value}
@@ -170,7 +181,9 @@ export function McpServerForm({ server, onSubmit, onCancel }: McpServerFormProps
                   className="border-input bg-background placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-ring/50 flex min-h-[80px] w-full rounded-md border px-3 py-2 text-sm focus-visible:ring-[3px] focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50"
                   value={args}
                   onChange={(e) => setArgs(e.target.value)}
-                  placeholder={"One argument per line\ne.g.\nmcp-server-filesystem\n/path/to/dir"}
+                  placeholder={
+                    "One argument per line\ne.g.\nmcp-server-filesystem\n/path/to/dir"
+                  }
                 />
                 <p className="text-muted-foreground text-xs">
                   One argument per line
@@ -206,7 +219,9 @@ export function McpServerForm({ server, onSubmit, onCancel }: McpServerFormProps
               className="border-input bg-background placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-ring/50 flex min-h-[80px] w-full rounded-md border px-3 py-2 text-sm focus-visible:ring-[3px] focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50"
               value={envVars}
               onChange={(e) => setEnvVars(e.target.value)}
-              placeholder={"KEY=VALUE, one per line\ne.g.\nGITHUB_TOKEN=ghp_xxx"}
+              placeholder={
+                "KEY=VALUE, one per line\ne.g.\nGITHUB_TOKEN=ghp_xxx"
+              }
             />
             <p className="text-muted-foreground text-xs">
               KEY=VALUE, one per line
@@ -224,7 +239,9 @@ export function McpServerForm({ server, onSubmit, onCancel }: McpServerFormProps
 
           <div className="flex gap-2 pt-2">
             <Button type="submit" disabled={isSubmitting}>
-              {isSubmitting && <Loader2 className="animate-spin" data-icon="inline-start" />}
+              {isSubmitting && (
+                <Loader2 className="animate-spin" data-icon="inline-start" />
+              )}
               {isEditing ? "Update" : "Create"}
             </Button>
             <Button type="button" variant="outline" onClick={onCancel}>

@@ -11,7 +11,7 @@ describe("MarkdownRenderer", () => {
 
   it("renders bold text as <strong>", () => {
     const { container } = render(
-      <MarkdownRenderer content="This is **bold** text" />,
+      <MarkdownRenderer content="This is **bold** text" />
     );
     const strong = container.querySelector("strong");
     expect(strong).toBeInTheDocument();
@@ -20,7 +20,7 @@ describe("MarkdownRenderer", () => {
 
   it("renders code blocks with a pre element", () => {
     const { container } = render(
-      <MarkdownRenderer content={'```python\nprint("hi")\n```'} />,
+      <MarkdownRenderer content={'```python\nprint("hi")\n```'} />
     );
     const pre = container.querySelector("pre");
     expect(pre).toBeInTheDocument();
@@ -30,7 +30,7 @@ describe("MarkdownRenderer", () => {
 
   it("sanitizes HTML - no script tags rendered", () => {
     const { container } = render(
-      <MarkdownRenderer content='<script>alert("xss")</script>' />,
+      <MarkdownRenderer content='<script>alert("xss")</script>' />
     );
     // There should be no script elements in the DOM
     const scripts = container.querySelectorAll("script");
@@ -41,7 +41,7 @@ describe("MarkdownRenderer", () => {
 
   it("renders inline code", () => {
     const { container } = render(
-      <MarkdownRenderer content="Use `console.log()` here" />,
+      <MarkdownRenderer content="Use `console.log()` here" />
     );
     const code = container.querySelector("code");
     expect(code).toBeInTheDocument();

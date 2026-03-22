@@ -19,7 +19,7 @@ export function SourceCitations({ sources }: SourceCitationsProps) {
   if (sources.length === 0) return null;
 
   return (
-    <div className="mt-2 border-t pt-2">
+    <div className="mt-1">
       <button
         type="button"
         onClick={() => setIsExpanded(!isExpanded)}
@@ -43,7 +43,7 @@ export function SourceCitations({ sources }: SourceCitationsProps) {
           {sources.map((source, index) => (
             <div
               key={`source-${index}`}
-              className="rounded border bg-background/50 p-2 text-xs"
+              className="bg-background/50 rounded border p-2 text-xs"
             >
               <div className="flex items-center justify-between">
                 <span className="font-medium">{source.file_name}</span>

@@ -2,7 +2,7 @@ import { apiFetch } from "@/lib/api";
 import type { GeneralSettings } from "@/types/chat";
 
 export async function getGeneralSettings(
-  token: string,
+  token: string
 ): Promise<GeneralSettings> {
   const res = await apiFetch("/api/v1/settings/general", token);
   if (!res.ok) throw new Error("Failed to fetch general settings");
@@ -11,7 +11,7 @@ export async function getGeneralSettings(
 
 export async function updateGeneralSettings(
   token: string,
-  data: Partial<GeneralSettings>,
+  data: Partial<GeneralSettings>
 ): Promise<GeneralSettings> {
   const res = await apiFetch("/api/v1/settings/general", token, {
     method: "PUT",

@@ -17,7 +17,7 @@ export function AppHeader() {
   const { logout } = useAuth();
 
   return (
-    <header className="bg-background flex h-12 shrink-0 items-center border-b px-4 gap-4">
+    <header className="bg-background flex h-12 shrink-0 items-center gap-4 border-b px-4">
       <Link href="/chat" className="text-sm font-semibold tracking-tight">
         Forge
       </Link>

@@ -37,7 +37,9 @@ describe("SourceCitations", () => {
     const user = userEvent.setup();
     render(<SourceCitations sources={mockSources} />);
 
-    await user.click(screen.getByRole("button", { name: /toggle source citations/i }));
+    await user.click(
+      screen.getByRole("button", { name: /toggle source citations/i })
+    );
 
     expect(screen.getByText("report.pdf")).toBeInTheDocument();
     expect(screen.getByText("notes.txt")).toBeInTheDocument();
@@ -47,7 +49,9 @@ describe("SourceCitations", () => {
     const user = userEvent.setup();
     render(<SourceCitations sources={mockSources} />);
 
-    await user.click(screen.getByRole("button", { name: /toggle source citations/i }));
+    await user.click(
+      screen.getByRole("button", { name: /toggle source citations/i })
+    );
 
     expect(screen.getByText("92% match")).toBeInTheDocument();
     expect(screen.getByText("78% match")).toBeInTheDocument();
@@ -57,7 +61,9 @@ describe("SourceCitations", () => {
     const user = userEvent.setup();
     render(<SourceCitations sources={mockSources} />);
 
-    await user.click(screen.getByRole("button", { name: /toggle source citations/i }));
+    await user.click(
+      screen.getByRole("button", { name: /toggle source citations/i })
+    );
 
     expect(
       screen.getByText(/The quarterly results showed/)

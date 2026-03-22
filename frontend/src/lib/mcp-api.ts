@@ -56,9 +56,7 @@ async function handleResponse<T>(res: Response): Promise<T> {
   return res.json() as Promise<T>;
 }
 
-export async function listMcpServers(
-  token: string
-): Promise<McpServerRead[]> {
+export async function listMcpServers(token: string): Promise<McpServerRead[]> {
   const res = await apiFetch("/api/v1/settings/mcp-servers", token);
   return handleResponse<McpServerRead[]>(res);
 }

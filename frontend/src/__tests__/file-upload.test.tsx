@@ -17,12 +17,16 @@ describe("FileUpload", () => {
 
   it("shows supported file types", () => {
     render(<FileUpload />);
-    expect(screen.getByText(/Supported: PDF, DOCX, TXT, MD/)).toBeInTheDocument();
+    expect(
+      screen.getByText(/Supported: PDF, DOCX, TXT, MD/)
+    ).toBeInTheDocument();
   });
 
   it("has a choose file button", () => {
     render(<FileUpload />);
-    expect(screen.getByRole("button", { name: /choose file/i })).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: /choose file/i })
+    ).toBeInTheDocument();
   });
 
   it("has a hidden file input", () => {

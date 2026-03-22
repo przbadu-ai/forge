@@ -22,14 +22,14 @@ export function SlashCommandMenu({
   const listRef = useRef<HTMLDivElement>(null);
 
   const filtered = skills.filter(
-    (s) =>
-      s.is_enabled &&
-      s.name.toLowerCase().includes(filter.toLowerCase()),
+    (s) => s.is_enabled && s.name.toLowerCase().includes(filter.toLowerCase())
   );
 
   // Scroll selected item into view
   useEffect(() => {
-    const el = listRef.current?.children[selectedIndex] as HTMLElement | undefined;
+    const el = listRef.current?.children[selectedIndex] as
+      | HTMLElement
+      | undefined;
     el?.scrollIntoView({ block: "nearest" });
   }, [selectedIndex]);
 
@@ -38,10 +38,10 @@ export function SlashCommandMenu({
   return (
     <div
       ref={listRef}
-      className="absolute z-50 max-h-60 w-72 overflow-y-auto rounded-lg border bg-popover p-1 shadow-lg"
+      className="bg-popover absolute z-50 max-h-60 w-72 overflow-y-auto rounded-lg border p-1 shadow-lg"
       style={{ bottom: position.bottom, left: position.left }}
     >
-      <div className="px-2 py-1.5 text-xs font-medium text-muted-foreground">
+      <div className="text-muted-foreground px-2 py-1.5 text-xs font-medium">
         Skills
       </div>
       {filtered.map((skill, i) => (
@@ -58,11 +58,11 @@ export function SlashCommandMenu({
             onSelect(skill);
           }}
         >
-          <Zap className="mt-0.5 size-3.5 shrink-0 text-muted-foreground" />
+          <Zap className="text-muted-foreground mt-0.5 size-3.5 shrink-0" />
           <div className="min-w-0">
             <div className="font-medium">/{skill.name}</div>
             {skill.description && (
-              <div className="truncate text-xs text-muted-foreground">
+              <div className="text-muted-foreground truncate text-xs">
                 {skill.description}
               </div>
             )}
@@ -73,10 +73,11 @@ export function SlashCommandMenu({
   );
 }
 
-export function getFilteredSkills(skills: SkillRead[], filter: string): SkillRead[] {
+export function getFilteredSkills(
+  skills: SkillRead[],
+  filter: string
+): SkillRead[] {
   return skills.filter(
-    (s) =>
-      s.is_enabled &&
-      s.name.toLowerCase().includes(filter.toLowerCase()),
+    (s) => s.is_enabled && s.name.toLowerCase().includes(filter.toLowerCase())
   );
 }

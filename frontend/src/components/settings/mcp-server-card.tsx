@@ -74,13 +74,14 @@ export function McpServerCard({
         : "stdio";
 
   const isRemote =
-    server.transport_type === "sse" || server.transport_type === "streamable_http";
+    server.transport_type === "sse" ||
+    server.transport_type === "streamable_http";
 
   const commandPreview = isRemote
-    ? server.url ?? ""
+    ? (server.url ?? "")
     : server.args.length > 0
       ? `${server.command ?? ""} ${server.args.join(" ")}`
-      : server.command ?? "";
+      : (server.command ?? "");
 
   return (
     <Card>

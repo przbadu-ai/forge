@@ -58,9 +58,7 @@ describe("WebSearchSection", () => {
 
   it("shows description text", async () => {
     render(<WebSearchSection />);
-    const desc = await screen.findByText(
-      /configure web search providers/i,
-    );
+    const desc = await screen.findByText(/configure web search providers/i);
     expect(desc).toBeInTheDocument();
   });
 });

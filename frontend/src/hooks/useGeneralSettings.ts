@@ -2,10 +2,7 @@
 
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/context/auth-context";
-import {
-  getGeneralSettings,
-  updateGeneralSettings,
-} from "@/lib/settings-api";
+import { getGeneralSettings, updateGeneralSettings } from "@/lib/settings-api";
 import type { GeneralSettings } from "@/types/chat";
 
 const SETTINGS_KEY = ["general-settings"] as const;

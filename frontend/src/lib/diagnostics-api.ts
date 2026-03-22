@@ -12,7 +12,7 @@ export interface DiagnosticsResponse {
 }
 
 export async function getDiagnostics(
-  token: string,
+  token: string
 ): Promise<DiagnosticsResponse> {
   const res = await apiFetch("/api/v1/diagnostics", token);
   if (!res.ok) throw new Error("Failed to fetch diagnostics");

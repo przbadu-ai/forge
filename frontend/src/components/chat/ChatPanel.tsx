@@ -56,7 +56,7 @@ export function ChatPanel({
     (content: string) => {
       void sendMessage(content);
     },
-    [sendMessage],
+    [sendMessage]
   );
 
   const handleExport = useCallback(async () => {
@@ -80,7 +80,8 @@ export function ChatPanel({
     void regenerate();
   }, [regenerate]);
 
-  const lastMessage = messages.length > 0 ? messages[messages.length - 1] : null;
+  const lastMessage =
+    messages.length > 0 ? messages[messages.length - 1] : null;
   const showRegenerate =
     !isStreaming && lastMessage && lastMessage.role === "assistant";
 
@@ -133,7 +134,7 @@ export function ChatPanel({
           )}
 
           {showRegenerate && (
-            <div className="flex justify-start pl-10 pb-2">
+            <div className="flex justify-start pb-2 pl-10">
               <Button
                 variant="ghost"
                 size="sm"
@@ -147,7 +148,7 @@ export function ChatPanel({
           )}
 
           {error && (
-            <div className="my-4 rounded-lg border border-destructive/50 bg-destructive/10 px-4 py-3 text-sm text-destructive">
+            <div className="border-destructive/50 bg-destructive/10 text-destructive my-4 rounded-lg border px-4 py-3 text-sm">
               {error}
             </div>
           )}

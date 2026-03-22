@@ -28,7 +28,9 @@ vi.mock("@/context/auth-context", () => ({
     login: vi.fn(),
     logout: vi.fn(),
   }),
-  AuthProvider: ({ children }: { children: React.ReactNode }) => <>{children}</>,
+  AuthProvider: ({ children }: { children: React.ReactNode }) => (
+    <>{children}</>
+  ),
 }));
 
 vi.mock("next/navigation", () => ({
@@ -93,9 +95,7 @@ describe("McpServersSection", () => {
     render(<McpServersSection />, { wrapper: createWrapper() });
 
     await waitFor(() => {
-      expect(
-        screen.getByText(/no mcp servers yet/i)
-      ).toBeInTheDocument();
+      expect(screen.getByText(/no mcp servers yet/i)).toBeInTheDocument();
     });
   });
 
@@ -157,7 +157,9 @@ describe("McpServersSection", () => {
 
     await waitFor(() => {
       expect(
-        screen.getByText(/add mcp server/i, { selector: "[data-slot='card-title']" })
+        screen.getByText(/add mcp server/i, {
+          selector: "[data-slot='card-title']",
+        })
       ).toBeInTheDocument();
     });
   });
@@ -175,7 +177,9 @@ describe("McpServersSection", () => {
 
     await waitFor(() => {
       expect(
-        screen.getByText(/add mcp server/i, { selector: "[data-slot='card-title']" })
+        screen.getByText(/add mcp server/i, {
+          selector: "[data-slot='card-title']",
+        })
       ).toBeInTheDocument();
     });
 
@@ -206,7 +210,10 @@ describe("McpServersSection", () => {
 
   it("calls toggleMcpServer when toggle is clicked", async () => {
     mockListMcpServers.mockResolvedValue(SAMPLE_SERVERS);
-    mockToggleMcpServer.mockResolvedValue({ ...SAMPLE_SERVERS[0], is_enabled: false });
+    mockToggleMcpServer.mockResolvedValue({
+      ...SAMPLE_SERVERS[0],
+      is_enabled: false,
+    });
     const user = userEvent.setup();
     render(<McpServersSection />, { wrapper: createWrapper() });
 

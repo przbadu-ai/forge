@@ -21,7 +21,7 @@ export interface FileUploadResponse {
 
 export async function uploadFile(
   token: string,
-  file: File,
+  file: File
 ): Promise<FileUploadResponse> {
   const formData = new FormData();
   formData.append("file", file);
@@ -38,7 +38,7 @@ export async function uploadFile(
   if (!res.ok) {
     const body = await res.json().catch(() => ({ detail: "Upload failed" }));
     throw new Error(
-      (body as { detail?: string }).detail ?? "Failed to upload file",
+      (body as { detail?: string }).detail ?? "Failed to upload file"
     );
   }
 
@@ -60,7 +60,7 @@ export async function listFiles(token: string): Promise<UploadedFile[]> {
 
 export async function getFile(
   token: string,
-  fileId: number,
+  fileId: number
 ): Promise<UploadedFile> {
   const res = await fetch(`${API_BASE}/api/v1/files/${fileId}`, {
     headers: {
@@ -74,10 +74,7 @@ export async function getFile(
   return res.json() as Promise<UploadedFile>;
 }
 
-export async function deleteFile(
-  token: string,
-  fileId: number,
-): Promise<void> {
+export async function deleteFile(token: string, fileId: number): Promise<void> {
   const res = await fetch(`${API_BASE}/api/v1/files/${fileId}`, {
     method: "DELETE",
     headers: {

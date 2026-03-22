@@ -1,4 +1,3 @@
-from app.core.config import settings
 """
 Integration tests for auth token lifecycle:
 - Full login -> protected call -> refresh -> protected call cycle
@@ -9,6 +8,8 @@ Integration tests for auth token lifecycle:
 
 import pytest
 from httpx import AsyncClient
+
+from app.core.config import settings
 
 
 @pytest.mark.asyncio

@@ -113,7 +113,7 @@ describe("ConversationList", () => {
 
     await waitFor(() => {
       expect(
-        screen.getByRole("button", { name: /new chat/i }),
+        screen.getByRole("button", { name: /new chat/i })
       ).toBeInTheDocument();
     });
   });
@@ -156,7 +156,9 @@ describe("ChatInput", () => {
     const onSend = vi.fn();
     const user = userEvent.setup();
 
-    render(<ChatInput onSend={onSend} disabled />, { wrapper: createWrapper() });
+    render(<ChatInput onSend={onSend} disabled />, {
+      wrapper: createWrapper(),
+    });
 
     const textarea = screen.getByPlaceholderText(/type a message/i);
     // textarea is disabled, so type won't work - verify the state
@@ -170,7 +172,7 @@ describe("ChatInput", () => {
     render(<ChatInput onSend={onSend} />, { wrapper: createWrapper() });
 
     const textarea = screen.getByPlaceholderText(
-      /type a message/i,
+      /type a message/i
     ) as HTMLTextAreaElement;
     await user.type(textarea, "Hello");
     await user.keyboard("{Enter}");
@@ -197,7 +199,7 @@ describe("ChatInput", () => {
 describe("MessageBubble", () => {
   it("renders user message with user styling", () => {
     const { container } = render(
-      <MessageBubble role="user" content="Hello from user" />,
+      <MessageBubble role="user" content="Hello from user" />
     );
     expect(screen.getByText("Hello from user")).toBeInTheDocument();
     // User messages are right-aligned
@@ -207,7 +209,7 @@ describe("MessageBubble", () => {
 
   it("renders assistant message with assistant styling", () => {
     const { container } = render(
-      <MessageBubble role="assistant" content="Hello from assistant" />,
+      <MessageBubble role="assistant" content="Hello from assistant" />
     );
     expect(screen.getByText("Hello from assistant")).toBeInTheDocument();
     // Assistant messages are left-aligned
@@ -217,7 +219,7 @@ describe("MessageBubble", () => {
 
   it("shows streaming cursor when isStreaming is true", () => {
     const { container } = render(
-      <MessageBubble role="assistant" content="Streaming..." isStreaming />,
+      <MessageBubble role="assistant" content="Streaming..." isStreaming />
     );
     // The streaming cursor is a span with animate-pulse
     const cursor = container.querySelector(".animate-pulse");
@@ -226,7 +228,7 @@ describe("MessageBubble", () => {
 
   it("does not show streaming cursor when isStreaming is false", () => {
     const { container } = render(
-      <MessageBubble role="assistant" content="Done" isStreaming={false} />,
+      <MessageBubble role="assistant" content="Done" isStreaming={false} />
     );
     const cursor = container.querySelector(".animate-pulse");
     expect(cursor).not.toBeInTheDocument();
@@ -234,7 +236,7 @@ describe("MessageBubble", () => {
 
   it("renders user messages as plain text (no markdown)", () => {
     const { container } = render(
-      <MessageBubble role="user" content="**bold text**" />,
+      <MessageBubble role="user" content="**bold text**" />
     );
     // User messages use <p> not markdown renderer, so no <strong>
     const paragraph = container.querySelector("p");

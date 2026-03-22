@@ -37,14 +37,12 @@ export function FileUpload({ onUploadComplete }: FileUploadProps) {
         await uploadFile(token, file);
         onUploadComplete?.();
       } catch (err) {
-        setError(
-          err instanceof Error ? err.message : "Upload failed",
-        );
+        setError(err instanceof Error ? err.message : "Upload failed");
       } finally {
         setUploading(false);
       }
     },
-    [token, onUploadComplete],
+    [token, onUploadComplete]
   );
 
   const handleFileChange = useCallback(
@@ -54,7 +52,7 @@ export function FileUpload({ onUploadComplete }: FileUploadProps) {
       // Reset input so same file can be re-uploaded
       if (inputRef.current) inputRef.current.value = "";
     },
-    [handleUpload],
+    [handleUpload]
   );
 
   const handleDrop = useCallback(
@@ -75,7 +73,7 @@ export function FileUpload({ onUploadComplete }: FileUploadProps) {
         }
       }
     },
-    [handleUpload],
+    [handleUpload]
   );
 
   const handleDragOver = useCallback((e: React.DragEvent) => {
@@ -134,9 +132,7 @@ export function FileUpload({ onUploadComplete }: FileUploadProps) {
         />
       </div>
 
-      {error && (
-        <p className="text-destructive text-sm">{error}</p>
-      )}
+      {error && <p className="text-destructive text-sm">{error}</p>}
     </div>
   );
 }

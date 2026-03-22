@@ -13,24 +13,24 @@ interface MarkdownRendererProps {
   className?: string;
 }
 
-export function MarkdownRenderer({ content, className }: MarkdownRendererProps) {
-  const CopyButton = useCallback(
-    ({ text }: { text: string }) => {
-      const handleCopy = () => {
-        void navigator.clipboard.writeText(text);
-      };
-      return (
-        <button
-          onClick={handleCopy}
-          className="absolute top-2 right-2 rounded bg-white/10 px-2 py-1 text-xs text-gray-300 opacity-0 transition-opacity hover:bg-white/20 group-hover:opacity-100"
-          aria-label="Copy code"
-        >
-          Copy
-        </button>
-      );
-    },
-    [],
-  );
+export function MarkdownRenderer({
+  content,
+  className,
+}: MarkdownRendererProps) {
+  const CopyButton = useCallback(({ text }: { text: string }) => {
+    const handleCopy = () => {
+      void navigator.clipboard.writeText(text);
+    };
+    return (
+      <button
+        onClick={handleCopy}
+        className="absolute top-2 right-2 rounded bg-white/10 px-2 py-1 text-xs text-gray-300 opacity-0 transition-opacity group-hover:opacity-100 hover:bg-white/20"
+        aria-label="Copy code"
+      >
+        Copy
+      </button>
+    );
+  }, []);
 
   const components: Components = {
     pre({ children, ...props }) {
@@ -110,8 +110,8 @@ export function MarkdownRenderer({ content, className }: MarkdownRendererProps) 
   return (
     <div
       className={cn(
-        "prose prose-sm dark:prose-invert max-w-none [&_p]:leading-relaxed [&_ul]:my-2 [&_ol]:my-2 [&_li]:my-0.5",
-        className,
+        "prose prose-sm dark:prose-invert max-w-none [&_li]:my-0.5 [&_ol]:my-2 [&_p]:leading-relaxed [&_ul]:my-2",
+        className
       )}
     >
       <ReactMarkdown

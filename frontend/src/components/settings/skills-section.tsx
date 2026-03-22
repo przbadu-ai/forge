@@ -124,8 +124,11 @@ export function SkillsSection() {
   });
 
   const createMutation = useMutation({
-    mutationFn: (data: { name: string; description: string; content?: string }) =>
-      createSkill(token!, data),
+    mutationFn: (data: {
+      name: string;
+      description: string;
+      content?: string;
+    }) => createSkill(token!, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["skills"] });
       setShowAddForm(false);
@@ -183,7 +186,7 @@ export function SkillsSection() {
 
   if (error) {
     return (
-      <div className="text-destructive rounded-md bg-destructive/10 p-4 text-sm">
+      <div className="text-destructive bg-destructive/10 rounded-md p-4 text-sm">
         Failed to load skills: {error.message}
       </div>
     );
@@ -229,10 +232,7 @@ export function SkillsSection() {
           <DialogHeader>
             <DialogTitle>Write skill instructions</DialogTitle>
           </DialogHeader>
-          <form
-            onSubmit={(e) => void handleCreate(e)}
-            className="space-y-4"
-          >
+          <form onSubmit={(e) => void handleCreate(e)} className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="skill-name">Skill name</Label>
               <Input
@@ -269,9 +269,7 @@ export function SkillsSection() {
               </p>
             )}
             <DialogFooter>
-              <DialogClose
-                render={<Button variant="outline" type="button" />}
-              >
+              <DialogClose render={<Button variant="outline" type="button" />}>
                 Cancel
               </DialogClose>
               <Button

@@ -11,7 +11,7 @@ export interface WebSearchSettingsUpdate {
 }
 
 export async function getWebSearchSettings(
-  token: string,
+  token: string
 ): Promise<WebSearchSettings> {
   const res = await apiFetch("/api/v1/settings/web-search", token);
   if (!res.ok) throw new Error("Failed to fetch web search settings");
@@ -20,7 +20,7 @@ export async function getWebSearchSettings(
 
 export async function updateWebSearchSettings(
   token: string,
-  data: WebSearchSettingsUpdate,
+  data: WebSearchSettingsUpdate
 ): Promise<WebSearchSettings> {
   const res = await apiFetch("/api/v1/settings/web-search", token, {
     method: "PUT",

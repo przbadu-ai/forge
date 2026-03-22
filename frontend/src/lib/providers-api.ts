@@ -41,9 +41,7 @@ async function handleResponse<T>(res: Response): Promise<T> {
   return res.json() as Promise<T>;
 }
 
-export async function listProviders(
-  token: string
-): Promise<ProviderRead[]> {
+export async function listProviders(token: string): Promise<ProviderRead[]> {
   const res = await apiFetch("/api/v1/settings/providers", token);
   return handleResponse<ProviderRead[]>(res);
 }
@@ -71,10 +69,7 @@ export async function updateProvider(
   return handleResponse<ProviderRead>(res);
 }
 
-export async function deleteProvider(
-  token: string,
-  id: number
-): Promise<void> {
+export async function deleteProvider(token: string, id: number): Promise<void> {
   const res = await apiFetch(`/api/v1/settings/providers/${id}`, token, {
     method: "DELETE",
   });

@@ -66,4 +66,9 @@ export interface SSETraceEvent {
   type: "trace_event";
   event: TraceEvent;
 }
-export type SSEEvent = SSETokenEvent | SSEDoneEvent | SSEErrorEvent | SSEStoppedEvent | SSETraceEvent;
+export type SSEEvent =
+  | SSETokenEvent
+  | SSEDoneEvent
+  | SSEErrorEvent
+  | SSEStoppedEvent
+  | SSETraceEvent;

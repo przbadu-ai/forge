@@ -86,7 +86,7 @@ export function ProvidersSection() {
 
   if (error) {
     return (
-      <div className="text-destructive rounded-md bg-destructive/10 p-4 text-sm">
+      <div className="text-destructive bg-destructive/10 rounded-md p-4 text-sm">
         Failed to load providers: {error.message}
       </div>
     );

@@ -8,7 +8,7 @@ export interface EmbeddingSettings {
 }
 
 export async function getEmbeddingSettings(
-  token: string,
+  token: string
 ): Promise<EmbeddingSettings> {
   const res = await apiFetch("/api/v1/settings/embeddings", token);
   if (!res.ok) throw new Error("Failed to fetch embedding settings");
@@ -17,7 +17,7 @@ export async function getEmbeddingSettings(
 
 export async function updateEmbeddingSettings(
   token: string,
-  data: Partial<EmbeddingSettings>,
+  data: Partial<EmbeddingSettings>
 ): Promise<EmbeddingSettings> {
   const res = await apiFetch("/api/v1/settings/embeddings", token, {
     method: "PUT",

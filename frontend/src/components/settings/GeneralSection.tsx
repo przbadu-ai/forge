@@ -21,9 +21,7 @@ export function GeneralSection() {
       setSystemPrompt(settings.system_prompt ?? "");
       setTemperature(settings.temperature);
       setMaxTokens(settings.max_tokens);
-      setSkillDirectories(
-        (settings.skill_directories ?? []).join("\n")
-      );
+      setSkillDirectories((settings.skill_directories ?? []).join("\n"));
     }
   }, [settings]);
 
@@ -74,7 +72,7 @@ export function GeneralSection() {
           onChange={(e) => setSystemPrompt(e.target.value)}
           placeholder="You are a helpful assistant..."
           rows={4}
-          className="flex w-full rounded-lg border border-input bg-transparent px-3 py-2 text-sm outline-none placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 disabled:opacity-50"
+          className="border-input placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-ring/50 flex w-full rounded-lg border bg-transparent px-3 py-2 text-sm outline-none focus-visible:ring-3 disabled:opacity-50"
           aria-label="System prompt"
         />
       </div>
@@ -94,7 +92,7 @@ export function GeneralSection() {
           className="w-full"
           aria-label="Temperature"
         />
-        <div className="flex justify-between text-xs text-muted-foreground">
+        <div className="text-muted-foreground flex justify-between text-xs">
           <span>0.0 (Precise)</span>
           <span>2.0 (Creative)</span>
         </div>
@@ -119,9 +117,11 @@ export function GeneralSection() {
           id="skill-directories"
           value={skillDirectories}
           onChange={(e) => setSkillDirectories(e.target.value)}
-          placeholder={"One directory path per line\n/path/to/skills\n~/.claude/skills"}
+          placeholder={
+            "One directory path per line\n/path/to/skills\n~/.claude/skills"
+          }
           rows={3}
-          className="flex w-full rounded-lg border border-input bg-transparent px-3 py-2 text-sm outline-none placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 disabled:opacity-50"
+          className="border-input placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-ring/50 flex w-full rounded-lg border bg-transparent px-3 py-2 text-sm outline-none focus-visible:ring-3 disabled:opacity-50"
           aria-label="Skill directories"
         />
         <p className="text-muted-foreground text-xs">

@@ -249,7 +249,7 @@ async def import_mcp_servers(
 
         # Check if server with this name already exists
         result = await session.execute(
-            select(McpServer).where(McpServer.name == server_name)
+            select(McpServer).where(McpServer.name == server_name)  # type: ignore[arg-type]
         )
         existing = result.scalars().first()
 

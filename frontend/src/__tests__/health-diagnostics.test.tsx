@@ -20,8 +20,18 @@ vi.mock("@/context/auth-context", () => ({
 const mockGetDiagnostics = vi.fn().mockResolvedValue({
   services: [
     { name: "LLM: Ollama", status: "ok", latency_ms: 42, error: null },
-    { name: "Embedding Model", status: "unconfigured", latency_ms: null, error: null },
-    { name: "ChromaDB", status: "error", latency_ms: null, error: "Connection refused" },
+    {
+      name: "Embedding Model",
+      status: "unconfigured",
+      latency_ms: null,
+      error: null,
+    },
+    {
+      name: "ChromaDB",
+      status: "error",
+      latency_ms: null,
+      error: "Connection refused",
+    },
   ],
 });
 
@@ -43,7 +53,7 @@ describe("HealthDiagnostics", () => {
   it("renders Check Now button", () => {
     render(<HealthDiagnostics />);
     expect(
-      screen.getByRole("button", { name: /check now/i }),
+      screen.getByRole("button", { name: /check now/i })
     ).toBeInTheDocument();
   });
 

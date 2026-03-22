@@ -7,7 +7,11 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Loader2 } from "lucide-react";
-import type { ProviderRead, ProviderCreate, ProviderUpdate } from "@/lib/providers-api";
+import type {
+  ProviderRead,
+  ProviderCreate,
+  ProviderUpdate,
+} from "@/lib/providers-api";
 
 interface ProviderFormProps {
   provider?: ProviderRead;
@@ -15,7 +19,11 @@ interface ProviderFormProps {
   onCancel: () => void;
 }
 
-export function ProviderForm({ provider, onSubmit, onCancel }: ProviderFormProps) {
+export function ProviderForm({
+  provider,
+  onSubmit,
+  onCancel,
+}: ProviderFormProps) {
   const isEditing = !!provider;
 
   const [name, setName] = useState(provider?.name ?? "");
@@ -144,7 +152,9 @@ export function ProviderForm({ provider, onSubmit, onCancel }: ProviderFormProps
 
           <div className="flex gap-2 pt-2">
             <Button type="submit" disabled={isSubmitting}>
-              {isSubmitting && <Loader2 className="animate-spin" data-icon="inline-start" />}
+              {isSubmitting && (
+                <Loader2 className="animate-spin" data-icon="inline-start" />
+              )}
               {isEditing ? "Update" : "Create"}
             </Button>
             <Button type="button" variant="outline" onClick={onCancel}>

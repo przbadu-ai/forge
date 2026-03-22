@@ -47,7 +47,10 @@ function serversToJson(servers: McpServerRead[]): string {
   return JSON.stringify({ mcpServers }, null, 2);
 }
 
-export function McpJsonEditor({ onImportSuccess, servers = [] }: McpJsonEditorProps) {
+export function McpJsonEditor({
+  onImportSuccess,
+  servers = [],
+}: McpJsonEditorProps) {
   const { token } = useAuth();
   const initialJson = useMemo(() => serversToJson(servers), [servers]);
   const [jsonText, setJsonText] = useState(initialJson);
@@ -129,7 +132,7 @@ export function McpJsonEditor({ onImportSuccess, servers = [] }: McpJsonEditorPr
         />
 
         {error && (
-          <div className="text-destructive rounded-md bg-destructive/10 p-3 text-sm">
+          <div className="text-destructive bg-destructive/10 rounded-md p-3 text-sm">
             {error}
           </div>
         )}

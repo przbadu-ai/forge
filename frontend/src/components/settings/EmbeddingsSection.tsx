@@ -90,8 +90,8 @@ export function EmbeddingsSection() {
             aria-label="Embedding base URL"
           />
           <p className="text-muted-foreground text-xs">
-            OpenAI-compatible endpoint. Leave empty to use hash-based
-            embeddings (dev/testing only).
+            OpenAI-compatible endpoint. Leave empty to use hash-based embeddings
+            (dev/testing only).
           </p>
         </div>
         <div className="space-y-2">

@@ -6,7 +6,14 @@ import { listFiles, deleteFile } from "@/lib/files-api";
 import type { UploadedFile } from "@/lib/files-api";
 import { Button } from "@/components/ui/button";
 import { FileUpload } from "@/components/chat/file-upload";
-import { Trash2, FileText, Loader2, CheckCircle, AlertCircle, Clock } from "lucide-react";
+import {
+  Trash2,
+  FileText,
+  Loader2,
+  CheckCircle,
+  AlertCircle,
+  Clock,
+} from "lucide-react";
 
 function formatSize(bytes: number): string {
   if (bytes < 1024) return `${bytes} B`;
@@ -72,7 +79,7 @@ export function FileList() {
   // Poll for status updates when there are processing files
   useEffect(() => {
     const hasProcessing = files.some(
-      (f) => f.status === "pending" || f.status === "processing",
+      (f) => f.status === "pending" || f.status === "processing"
     );
     if (!hasProcessing) return;
 
@@ -96,7 +103,7 @@ export function FileList() {
         setDeletingId(null);
       }
     },
-    [token],
+    [token]
   );
 
   if (loading) {

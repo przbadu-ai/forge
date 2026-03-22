@@ -29,7 +29,9 @@ export function ConversationList({ activeId }: ConversationListProps) {
   const [editingId, setEditingId] = useState<number | null>(null);
   const [editValue, setEditValue] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
-  const [searchResults, setSearchResults] = useState<Conversation[] | null>(null);
+  const [searchResults, setSearchResults] = useState<Conversation[] | null>(
+    null
+  );
   const [isSearching, setIsSearching] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -67,18 +69,15 @@ export function ConversationList({ activeId }: ConversationListProps) {
     (id: number) => {
       router.push(`/chat/${id}`);
     },
-    [router],
+    [router]
   );
 
-  const handleDoubleClick = useCallback(
-    (id: number, title: string) => {
-      setEditingId(id);
-      setEditValue(title);
-      // Focus after render
-      requestAnimationFrame(() => inputRef.current?.focus());
-    },
-    [],
-  );
+  const handleDoubleClick = useCallback((id: number, title: string) => {
+    setEditingId(id);
+    setEditValue(title);
+    // Focus after render
+    requestAnimationFrame(() => inputRef.current?.focus());
+  }, []);
 
   const handleRenameSubmit = useCallback(
     async (id: number) => {
@@ -88,7 +87,7 @@ export function ConversationList({ activeId }: ConversationListProps) {
       }
       setEditingId(null);
     },
-    [editValue, renameConversation],
+    [editValue, renameConversation]
   );
 
   const handleDelete = useCallback(
@@ -100,7 +99,7 @@ export function ConversationList({ activeId }: ConversationListProps) {
         router.push("/chat");
       }
     },
-    [activeId, deleteConversation, router],
+    [activeId, deleteConversation, router]
   );
 
   return (
@@ -119,7 +118,7 @@ export function ConversationList({ activeId }: ConversationListProps) {
       {/* Search input */}
       <div className="px-3 pb-2">
         <div className="relative">
-          <Search className="absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
+          <Search className="text-muted-foreground absolute top-1/2 left-2.5 h-3.5 w-3.5 -translate-y-1/2" />
           <Input
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
@@ -132,11 +131,11 @@ export function ConversationList({ activeId }: ConversationListProps) {
 
       <div className="flex-1 overflow-y-auto px-2">
         {isLoading || isSearching ? (
-          <div className="px-3 py-2 text-sm text-muted-foreground">
+          <div className="text-muted-foreground px-3 py-2 text-sm">
             Loading...
           </div>
         ) : displayConversations.length === 0 ? (
-          <div className="px-3 py-2 text-sm text-muted-foreground">
+          <div className="text-muted-foreground px-3 py-2 text-sm">
             {searchQuery.length >= 2
               ? "No conversations found"
               : "No conversations yet"}
@@ -147,15 +146,13 @@ export function ConversationList({ activeId }: ConversationListProps) {
               <div
                 key={conv.id}
                 className={cn(
-                  "group flex items-center gap-1 rounded-lg px-3 py-2 text-sm transition-colors cursor-pointer hover:bg-muted",
-                  activeId === conv.id && "bg-muted font-medium",
+                  "group hover:bg-muted flex cursor-pointer items-center gap-1 rounded-lg px-3 py-2 text-sm transition-colors",
+                  activeId === conv.id && "bg-muted font-medium"
                 )}
                 onClick={() => handleSelect(conv.id)}
-                onDoubleClick={() =>
-                  handleDoubleClick(conv.id, conv.title)
-                }
+                onDoubleClick={() => handleDoubleClick(conv.id, conv.title)}
               >
-                <MessageSquare className="h-4 w-4 shrink-0 text-muted-foreground" />
+                <MessageSquare className="text-muted-foreground h-4 w-4 shrink-0" />
 
                 {editingId === conv.id ? (
                   <input
@@ -171,17 +168,15 @@ export function ConversationList({ activeId }: ConversationListProps) {
                       }
                     }}
                     onClick={(e) => e.stopPropagation()}
-                    className="min-w-0 flex-1 rounded border bg-background px-1 py-0.5 text-sm outline-none"
+                    className="bg-background min-w-0 flex-1 rounded border px-1 py-0.5 text-sm outline-none"
                   />
                 ) : (
-                  <span className="min-w-0 flex-1 truncate">
-                    {conv.title}
-                  </span>
+                  <span className="min-w-0 flex-1 truncate">{conv.title}</span>
                 )}
 
                 <button
                   onClick={(e) => void handleDelete(e, conv.id)}
-                  className="shrink-0 rounded p-1 text-muted-foreground opacity-0 transition-opacity hover:text-destructive group-hover:opacity-100"
+                  className="text-muted-foreground hover:text-destructive shrink-0 rounded p-1 opacity-0 transition-opacity group-hover:opacity-100"
                   aria-label="Delete conversation"
                 >
                   <Trash2 className="h-3.5 w-3.5" />

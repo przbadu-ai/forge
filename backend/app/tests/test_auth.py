@@ -1,6 +1,7 @@
-from app.core.config import settings
 import pytest
 from httpx import AsyncClient
+
+from app.core.config import settings
 
 
 @pytest.mark.asyncio

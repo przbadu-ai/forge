@@ -27,7 +27,9 @@ vi.mock("@/context/auth-context", () => ({
     login: vi.fn(),
     logout: vi.fn(),
   }),
-  AuthProvider: ({ children }: { children: React.ReactNode }) => <>{children}</>,
+  AuthProvider: ({ children }: { children: React.ReactNode }) => (
+    <>{children}</>
+  ),
 }));
 
 vi.mock("next/navigation", () => ({
@@ -86,9 +88,7 @@ describe("ProvidersSection", () => {
     render(<ProvidersSection />, { wrapper: createWrapper() });
 
     await waitFor(() => {
-      expect(
-        screen.getByText(/no providers yet/i)
-      ).toBeInTheDocument();
+      expect(screen.getByText(/no providers yet/i)).toBeInTheDocument();
     });
   });
 
@@ -114,7 +114,11 @@ describe("ProvidersSection", () => {
     await user.click(screen.getByRole("button", { name: /add provider/i }));
 
     await waitFor(() => {
-      expect(screen.getByText(/add provider/i, { selector: "[data-slot='card-title']" })).toBeInTheDocument();
+      expect(
+        screen.getByText(/add provider/i, {
+          selector: "[data-slot='card-title']",
+        })
+      ).toBeInTheDocument();
     });
   });
 

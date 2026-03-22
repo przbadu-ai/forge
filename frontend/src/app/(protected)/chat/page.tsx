@@ -17,13 +17,11 @@ export default function ChatPage() {
 
   return (
     <div className="flex h-full flex-col items-center justify-center gap-4">
-      <MessageSquarePlus className="h-12 w-12 text-muted-foreground/50" />
-      <h2 className="text-lg font-medium text-muted-foreground">
+      <MessageSquarePlus className="text-muted-foreground/50 h-12 w-12" />
+      <h2 className="text-muted-foreground text-lg font-medium">
         Select a conversation or start a new one
       </h2>
-      <Button onClick={handleNew}>
-        New Chat
-      </Button>
+      <Button onClick={handleNew}>New Chat</Button>
     </div>
   );
 }

@@ -81,9 +81,7 @@ export function ProviderCard({
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           {provider.name}
-          {provider.is_default && (
-            <Badge variant="secondary">Default</Badge>
-          )}
+          {provider.is_default && <Badge variant="secondary">Default</Badge>}
         </CardTitle>
         <CardAction>
           <div className="flex gap-1">

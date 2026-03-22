@@ -52,10 +52,10 @@ describe("ChatInput — streaming toggle", () => {
     });
 
     expect(
-      screen.getByRole("button", { name: /send message/i }),
+      screen.getByRole("button", { name: /send message/i })
     ).toBeInTheDocument();
     expect(
-      screen.queryByRole("button", { name: /stop generation/i }),
+      screen.queryByRole("button", { name: /stop generation/i })
     ).not.toBeInTheDocument();
   });
 
@@ -65,10 +65,10 @@ describe("ChatInput — streaming toggle", () => {
     });
 
     expect(
-      screen.getByRole("button", { name: /stop generation/i }),
+      screen.getByRole("button", { name: /stop generation/i })
     ).toBeInTheDocument();
     expect(
-      screen.queryByRole("button", { name: /send message/i }),
+      screen.queryByRole("button", { name: /send message/i })
     ).not.toBeInTheDocument();
   });
 
@@ -90,7 +90,7 @@ describe("ChatInput — streaming toggle", () => {
     render(<ChatInput onSend={vi.fn()} />, { wrapper: createWrapper() });
 
     expect(
-      screen.getByRole("button", { name: /send message/i }),
+      screen.getByRole("button", { name: /send message/i })
     ).toBeInTheDocument();
   });
 });

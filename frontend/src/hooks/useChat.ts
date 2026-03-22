@@ -3,7 +3,12 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useAuth } from "@/context/auth-context";
 import { getMessages, regenerateLastMessage } from "@/lib/chat-api";
-import type { Message, SourceCitationData, SSEEvent, TraceEvent } from "@/types/chat";
+import type {
+  Message,
+  SourceCitationData,
+  SSEEvent,
+  TraceEvent,
+} from "@/types/chat";
 
 import { API_BASE } from "@/lib/api";
 
@@ -34,9 +39,15 @@ export function useChat({
   const [streamingContent, setStreamingContent] = useState<string | null>(null);
   const [isStreaming, setIsStreaming] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [streamingTraceEvents, setStreamingTraceEvents] = useState<TraceEvent[]>([]);
-  const [messageTraces, setMessageTraces] = useState<Record<number, TraceEvent[]>>({});
-  const [messageSources, setMessageSources] = useState<Record<number, SourceCitationData[]>>({});
+  const [streamingTraceEvents, setStreamingTraceEvents] = useState<
+    TraceEvent[]
+  >([]);
+  const [messageTraces, setMessageTraces] = useState<
+    Record<number, TraceEvent[]>
+  >({});
+  const [messageSources, setMessageSources] = useState<
+    Record<number, SourceCitationData[]>
+  >({});
   const traceEventsRef = useRef<TraceEvent[]>([]);
   const abortControllerRef = useRef<AbortController | null>(null);
   const messageCountRef = useRef(0);
@@ -57,7 +68,7 @@ export function useChat({
         if (!cancelled) {
           setMessages(msgs);
           messageCountRef.current = msgs.filter(
-            (m) => m.role === "user",
+            (m) => m.role === "user"
           ).length;
           // Parse trace_data from loaded messages for replay
           const traces: Record<number, TraceEvent[]> = {};
@@ -131,7 +142,7 @@ export function useChat({
             body: JSON.stringify({ content }),
             signal: controller.signal,
             credentials: "include",
-          },
+          }
         );
 
         if (!response.ok) {
@@ -166,7 +177,10 @@ export function useChat({
                 accumulated += event.delta;
                 setStreamingContent(accumulated);
               } else if (event.type === "trace_event") {
-                traceEventsRef.current = [...traceEventsRef.current, event.event];
+                traceEventsRef.current = [
+                  ...traceEventsRef.current,
+                  event.event,
+                ];
                 setStreamingTraceEvents(traceEventsRef.current);
               } else if (event.type === "done") {
                 // Capture trace snapshot before clearing
@@ -182,9 +196,15 @@ export function useChat({
                   created_at: new Date().toISOString(),
                 };
                 setMessages((prev) => [...prev, assistantMsg]);
-                setMessageTraces((prev) => ({ ...prev, [event.message_id]: traceSnapshot }));
+                setMessageTraces((prev) => ({
+                  ...prev,
+                  [event.message_id]: traceSnapshot,
+                }));
                 if (event.sources && event.sources.length > 0) {
-                  setMessageSources((prev) => ({ ...prev, [event.message_id]: event.sources! }));
+                  setMessageSources((prev) => ({
+                    ...prev,
+                    [event.message_id]: event.sources!,
+                  }));
                 }
                 traceEventsRef.current = [];
                 setStreamingTraceEvents([]);
@@ -210,7 +230,10 @@ export function useChat({
                 };
                 setMessages((prev) => [...prev, partialMsg]);
                 if (traceSnapshot.length > 0) {
-                  setMessageTraces((prev) => ({ ...prev, [event.message_id]: traceSnapshot }));
+                  setMessageTraces((prev) => ({
+                    ...prev,
+                    [event.message_id]: traceSnapshot,
+                  }));
                 }
                 traceEventsRef.current = [];
                 setStreamingTraceEvents([]);
@@ -243,7 +266,7 @@ export function useChat({
         abortControllerRef.current = null;
       }
     },
-    [conversationId, token, isStreaming, onConversationUpdated],
+    [conversationId, token, isStreaming, onConversationUpdated]
   );
 
   const stopGeneration = useCallback(() => {

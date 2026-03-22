@@ -100,7 +100,9 @@ export function WebSearchSection() {
             type="password"
             value={exaApiKey}
             onChange={(e) => setExaApiKey(e.target.value)}
-            placeholder={exaKeySet ? "********** (key saved)" : "Enter Exa API key"}
+            placeholder={
+              exaKeySet ? "********** (key saved)" : "Enter Exa API key"
+            }
             aria-label="Exa API key"
           />
           <p className="text-muted-foreground text-xs">
