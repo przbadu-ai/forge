@@ -1,31 +1,33 @@
 ---
 gsd_state_version: 1.0
-milestone: v1.0
-milestone_name: milestone
-status: unknown
-stopped_at: Completed 11-01-PLAN.md
-last_updated: "2026-03-22T07:18:32.359Z"
+milestone: v2.1
+milestone_name: PWA
+status: defining-requirements
+stopped_at: null
+last_updated: "2026-03-22"
 last_activity: 2026-03-22
 progress:
-  total_phases: 11
-  completed_phases: 3
-  total_plans: 3
-  completed_plans: 23
+  total_phases: 0
+  completed_phases: 0
+  total_plans: 0
+  completed_plans: 0
 ---
 
 # Project State
 
 ## Project Reference
 
-See: .planning/PROJECT.md (updated 2026-03-21)
+See: .planning/PROJECT.md (updated 2026-03-22)
 
 **Core value:** Every AI interaction — chat, tool call, MCP action, skill execution — is visible, persisted, and reviewable.
-**Current focus:** Phase 11 — settings-quality-gate
+**Current focus:** Defining requirements for v2.1 PWA
 
 ## Current Position
 
-Phase: 11
-Plan: Not started
+Phase: Not started (defining requirements)
+Plan: —
+Status: Defining requirements
+Last activity: 2026-03-22 — Milestone v2.1 started
 
 ## Performance Metrics
 

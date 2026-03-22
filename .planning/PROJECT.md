@@ -31,7 +31,7 @@ Every AI interaction — chat, tool call, MCP action, skill execution — is vis
 
 ### Active
 
-(None yet — define in next milestone)
+(Defined in REQUIREMENTS.md for current milestone)
 
 ### Out of Scope
 
@@ -39,9 +39,19 @@ Every AI interaction — chat, tool call, MCP action, skill execution — is vis
 - Multi-tenant/multi-user features — single-user tool for local deployment
 - Enterprise governance/audit workflows — not the target audience
 - Advanced RAG (graph RAG, adaptive chunking) — simple retrieval works for MVP
-- Mobile app — web-first, responsive UI is sufficient
 - OAuth/SSO — single-user doesn't need it
 - Real-time collaboration — solo developer tool
+
+## Current Milestone: v2.1 PWA
+
+**Goal:** Make Forge a fully installable Progressive Web App with responsive UI, service worker, offline shell, and app manifest — usable as a desktop and mobile app.
+
+**Target features:**
+- Web app manifest with icons and splash screens
+- Service worker with offline shell and caching strategy
+- Install prompt UX for desktop and mobile
+- Responsive layout across all pages (sidebar, chat, settings)
+- Mobile-optimized touch interactions and navigation
 
 ## Context
 
@@ -81,5 +91,22 @@ The application connects to any OpenAI-compatible endpoint (Ollama, LM Studio, v
 | EphemeralClient for ChromaDB | Single-process dev; switch to HttpClient for production | ⚠️ Revisit for multi-process |
 | pwdlib[bcrypt] over passlib | passlib abandoned, broken on Python 3.12+ | ✓ Good |
 
+## Evolution
+
+This document evolves at phase transitions and milestone boundaries.
+
+**After each phase transition** (via `/gsd:transition`):
+1. Requirements invalidated? → Move to Out of Scope with reason
+2. Requirements validated? → Move to Validated with phase reference
+3. New requirements emerged? → Add to Active
+4. Decisions to log? → Add to Key Decisions
+5. "What This Is" still accurate? → Update if drifted
+
+**After each milestone** (via `/gsd:complete-milestone`):
+1. Full review of all sections
+2. Core Value check — still the right priority?
+3. Audit Out of Scope — reasons still valid?
+4. Update Context with current state
+
 ---
-*Last updated: 2026-03-22 after v1.0 milestone*
+*Last updated: 2026-03-22 after v2.1 milestone start*
