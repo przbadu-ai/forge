@@ -110,3 +110,67 @@ jobs:
         run: npm ci
       - name: Build Next.js
         run: npm run build
+
+  e2e:
+    name: E2E — Playwright
+    runs-on: ubuntu-latest
+    needs: [backend-test, frontend-build]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install uv
+        uses: astral-sh/setup-uv@v3
+        with:
+          version: "latest"
+      - name: Set up Python 3.12
+        run: uv python install 3.12
+      - name: Install backend deps
+        run: cd backend && uv sync --all-extras
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: "npm"
+          cache-dependency-path: frontend/package-lock.json
+      - name: Install frontend deps
+        run: cd frontend && npm ci
+      - name: Install Playwright browsers
+        run: cd frontend && npx playwright install --with-deps chromium
+      - name: Create .env file
+        run: |
+          echo "SECRET_KEY=$(openssl rand -hex 32)" > .env
+          echo "DEFAULT_USERNAME=admin" >> .env
+          echo "DEFAULT_PASSWORD=changeme" >> .env
+          echo "DATABASE_URL=sqlite+aiosqlite:///./test_e2e.db" >> .env
+      - name: Run Alembic migrations
+        run: cd backend && uv run alembic upgrade head
+      - name: Start backend
+        run: cd backend && uv run uvicorn app.main:app --host 0.0.0.0 --port 8000 &
+      - name: Build and start frontend
+        run: cd frontend && npm run build && npm run start &
+      - name: Wait for servers
+        run: |
+          echo "Waiting for backend..."
+          for i in $(seq 1 30); do
+            if curl -sf http://localhost:8000/api/v1/health > /dev/null 2>&1; then
+              echo "Backend ready"
+              break
+            fi
+            sleep 2
+          done
+          echo "Waiting for frontend..."
+          for i in $(seq 1 30); do
+            if curl -sf http://localhost:3000 > /dev/null 2>&1; then
+              echo "Frontend ready"
+              break
+            fi
+            sleep 2
+          done
+      - name: Run Playwright tests
+        run: cd frontend && npx playwright test --reporter=list
+      - name: Upload Playwright report
+        uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: playwright-report
+          path: frontend/test-results/
+          retention-days: 7

@@ -3,7 +3,7 @@
         test backend-test frontend-test \
         lint backend-lint frontend-lint \
         type-check backend-type-check frontend-type-check \
-        format migrate build
+        format migrate build e2e
 
 # ── Setup ─────────────────────────────────────────────────
 setup: check-node install-uv backend-setup frontend-setup setup-env migrate
@@ -115,6 +115,10 @@ migrate:
 
 migrate-down:
 	cd backend && uv run alembic downgrade -1
+
+# ── E2E Testing ───────────────────────────────────────────
+e2e:
+	cd frontend && npx playwright test --reporter=list
 
 # ── Build ──────────────────────────────────────────────────
 build:
