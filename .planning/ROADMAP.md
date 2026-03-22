@@ -46,11 +46,11 @@ Full details: `.planning/milestones/v1.0-ROADMAP.md`
   3. SSE streaming for chat continues to work correctly with service worker registered (no buffering or corruption)
   4. User sees a branded offline fallback page (not browser error) when backend is unreachable
   5. Docker standalone build serves the service worker and manifest correctly (curl /sw.js returns 200)
-**Plans**: TBD
+**Plans**: 2 plans
 
 Plans:
-- [ ] 12-01: TBD
-- [ ] 12-02: TBD
+- [ ] 12-01-PLAN.md -- Serwist integration, manifest, icons, SW source, and config wiring
+- [ ] 12-02-PLAN.md -- Offline fallback page and PWA browser verification
 
 ### Phase 13: Install UX and Offline Experience
 **Goal**: Users can discover, install, and manage the Forge PWA with clear offline state communication and seamless update lifecycle
@@ -100,6 +100,6 @@ Phases execute in numeric order: 12 -> 13 -> 14
 | 9. Skills Integration | v1.0 | 1/1 | Complete | 2026-03-22 |
 | 10. File Upload + RAG | v1.0 | 1/1 | Complete | 2026-03-22 |
 | 11. Settings + Quality Gate | v1.0 | 2/2 | Complete | 2026-03-22 |
-| 12. PWA Foundation | v2.1 | 0/? | Not started | - |
+| 12. PWA Foundation | v2.1 | 0/2 | Planning complete | - |
 | 13. Install UX + Offline | v2.1 | 0/? | Not started | - |
 | 14. Responsive Layout | v2.1 | 0/? | Not started | - |
