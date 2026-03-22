@@ -1,8 +1,21 @@
 """Tests for GET/PUT /api/v1/settings/general endpoints."""
 
+import pytest_asyncio
 from httpx import AsyncClient
+from sqlalchemy import delete
+
+from app.core.database import AsyncSessionFactory
+from app.models.settings import AppSettings
 
 SETTINGS_BASE = "/api/v1/settings/general/"
+
+
+@pytest_asyncio.fixture(autouse=True)
+async def _clean_settings() -> None:
+    """Remove all app_settings rows before each test."""
+    async with AsyncSessionFactory() as session:
+        await session.execute(delete(AppSettings))
+        await session.commit()
 
 
 # ---------- 1. GET returns defaults when no rows ----------
