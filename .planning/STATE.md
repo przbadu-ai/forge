@@ -84,7 +84,7 @@ None yet.
 
 ## Session Continuity
 
-Last activity: 2026-03-22
+Last activity: 2026-03-22 - Completed quick task 260322-piv: Fix MCP server not working in production
 Last session: 2026-03-22T12:44:36.000Z
 Stopped at: Completed 260322-piv quick task
 Resume file: None
