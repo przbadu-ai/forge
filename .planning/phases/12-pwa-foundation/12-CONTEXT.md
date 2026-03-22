@@ -28,7 +28,7 @@ This phase makes Forge a valid, installable Progressive Web App. Delivers: web a
 ### Offline Fallback Page
 - Branded static page with Forge logo, "You're offline" message, and retry button
 - Inline CSS for self-contained rendering (no dependency on cached stylesheets)
-- Place at `app/offline/page.tsx` and precache in service worker
+- Place at `app/~offline/page.tsx` (Serwist convention) and precache in service worker
 - Auto-retry on browser `online` event plus manual retry button
 
 ### Claude's Discretion
